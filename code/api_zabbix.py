@@ -10,15 +10,23 @@ import _secrets
 
 class API_ZABBIX():
 
-    __slots__ = ('hosts')
+    _instance = None
+    
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = object().__new__(cls)
+        return cls._instance
+
+
+
+    __slots__ = ()
 
     def __enter__(self):
-        self.hosts = self._get_hosts_information()
         return self
     
     def __exit__(self, exc_type, exc_value, traceback) -> list:
-        return False
-    
+        return False    
+
 
 
     def _get_hosts_information(self) -> None:
