@@ -5,7 +5,7 @@
 
 
 import requests
-import secrets.zabbix_secrets as zabbix_secrets
+import _secrets.zabbix_secrets as zabbix_secrets
 
 
 class API_ZABBIX():

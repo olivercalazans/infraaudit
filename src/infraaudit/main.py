@@ -4,8 +4,10 @@
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software...
 
 
+import asyncio
+import _secrets.main_secrets as main_secrets
 from zabbix.api_zabbix import API_ZABBIX
-import secrets.secrets as secrets
+from snmp.snmp_fetcher import SNMP_Fetcher
 
 
 class Main:
@@ -26,6 +28,7 @@ class Main:
 
     def __enter__(self):
         self._get_host_information_by_zabbix_api()
+        self._get_information_by_snmp()
         return self
 
 
@@ -39,15 +42,21 @@ class Main:
             self._hosts     =  self._select_devices(data)
 
 
-
     @staticmethod
     def _select_devices(data:list[dict]) -> list:
-        return {device['host']: {'id': device['hostid'], 'name':device['name']} for device in data if secrets.IPS in device['host']}
+        return {device['host']: {'id': device['hostid'], 'name':device['name']} for device in data if main_secrets.IPS in device['host']}
+    
 
+    def _get_information_by_snmp(self) -> None:
+        asyncio.run(self._fetch_all_snmp())
+
+
+    async def _fetch_all_snmp(self) -> None:
+        tasks = [SNMP_Fetcher()._snmpget(ip) for ip in self._hosts]
+        await asyncio.gather(*tasks)
     
 
 
 if __name__ == '__main__':
     with Main() as infraaudit:
-        for i in infraaudit._hosts.items():
-            print(i)
+        ...
