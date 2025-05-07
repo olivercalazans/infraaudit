@@ -4,16 +4,14 @@
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software...
 
 
-from pysnmp.hlapi.v1arch     import get_cmd, CommunityData
-from pysnmp.hlapi.transport  import SnmpEngine
-from pysnmp.hlapi.v3arch     import UdpTransportTarget, ContextData, ObjectType, ObjectIdentity
+from pysnmp.hlapi.v3arch     import *
 import _secrets.snmp_secrets as snmp_secrets
 
 
 class SNMP_Fetcher:
 
     ENGINE:SnmpEngine       = SnmpEngine()
-    COMMUNITY:CommunityData = CommunityData(snmp_secrets.COMMUNITY, mpModel=snmp_secrets.VERSION)
+    COMMUNITY:CommunityData = CommunityData(snmp_secrets.COMMUNITY)
     CONTEXT:ContextData     = ContextData()
     _sysObjectID:str        = '1.3.6.1.2.1.1.2.0'
 
@@ -25,7 +23,9 @@ class SNMP_Fetcher:
             cls.COMMUNITY,
             await UdpTransportTarget.create((ip, 161)),
             cls.CONTEXT,
-            ObjectType(ObjectIdentity(cls._sysObjectID))
+            ObjectType(ObjectIdentity(cls._sysObjectID)),
+            lookupMib=False,
+            lexicographicMode=False,
         )
         
         errorIndication, errorStatus, errorIndex, varBinds = result
