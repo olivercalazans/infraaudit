@@ -5,4 +5,4 @@ InfraAudit is a Python tool designed to audit network infrastructure devices by 
 
 
 ## Data Source
-**OID list:** [iana.org](https://www.iana.org/assignments/enterprise-numbers/enterprise-numbers)
+**OID list (modified):** [iana.org](https://www.iana.org/assignments/enterprise-numbers/enterprise-numbers)
