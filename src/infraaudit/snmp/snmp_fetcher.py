@@ -5,6 +5,7 @@
 
 
 from pysnmp.hlapi.v3arch.asyncio import *
+from oid.oid_manager             import OID_Manager
 import _secrets.snmp_secrets as snmp_secrets
 
 
@@ -13,7 +14,6 @@ class SNMP_Fetcher:
     ENGINE:SnmpEngine       = SnmpEngine()
     COMMUNITY:CommunityData = CommunityData(snmp_secrets.COMMUNITY)
     CONTEXT:ContextData     = ContextData()
-    _sysObjectID:str        = '1.3.6.1.2.1.1.2.0'
 
 
     @classmethod
@@ -23,7 +23,7 @@ class SNMP_Fetcher:
             cls.COMMUNITY,
             await UdpTransportTarget.create((ip, 161)),
             cls.CONTEXT,
-            ObjectType(ObjectIdentity(cls._sysObjectID)),
+            ObjectType(ObjectIdentity(OID_Manager.SYS_OBJECT_ID)),
             lookupMib=False,
             lexicographicMode=False,
         )
