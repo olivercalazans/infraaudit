@@ -4,7 +4,7 @@
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software...
 
 
-from pysnmp.hlapi.v3arch     import *
+from pysnmp.hlapi.v3arch.asyncio import *
 import _secrets.snmp_secrets as snmp_secrets
 
 
@@ -17,7 +17,7 @@ class SNMP_Fetcher:
 
 
     @classmethod
-    async def _snmpget(cls, ip: str) -> str:
+    async def snmpget(cls, ip: str) -> tuple[str, str]:
         result = await get_cmd(
             cls.ENGINE,
             cls.COMMUNITY,
@@ -28,12 +28,13 @@ class SNMP_Fetcher:
             lexicographicMode=False,
         )
         
-        errorIndication, errorStatus, errorIndex, varBinds = result
+        error_indication, error_status, error_index, var_binds = result
         
-        if errorIndication:
-            print(f'Erro: {errorIndication}')
-        elif errorStatus:
-            print(f'{errorStatus.prettyPrint()} at {errorIndex and varBinds[int(errorIndex)-1][0] or "?"}')
-        else:
-            for varBind in varBinds:
-                print(f'{varBind[0]} = {varBind[1]}')
+        if error_indication:
+            return (ip, str(error_indication))
+        
+        if error_status:
+            print(f'{error_status.prettyPrint()} at {ip} {error_index and var_binds[int(error_index)-1][0] or "?"}')
+            return (ip, error_status)
+        
+        return (ip, str(var_binds[-1][-1]))
