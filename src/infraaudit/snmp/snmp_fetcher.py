@@ -30,11 +30,7 @@ class SNMP_Fetcher:
         
         error_indication, error_status, error_index, var_binds = result
         
-        if error_indication:
-            return (ip, str(error_indication))
-        
-        if error_status:
-            print(f'{error_status.prettyPrint()} at {ip} {error_index and var_binds[int(error_index)-1][0] or "?"}')
-            return (ip, error_status)
+        if error_indication or error_status:
+            return (ip, f'ERROR: {str(error_indication or error_status)}')
         
         return (ip, str(var_binds[-1][-1]))

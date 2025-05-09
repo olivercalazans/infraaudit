@@ -10,8 +10,7 @@ from functools import lru_cache
 
 class OID_Manager:
 
-    FILE_PATH:str   = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'oid_enterprise_list.txt')
-    
+    FILE_PATH:str     = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'oid_enterprise_list.txt')
     ENTERPRISE:str    = '1.3.6.1.4.1'
     SYS_OBJECT_ID:str = '1.3.6.1.2.1.1.2.0'
 

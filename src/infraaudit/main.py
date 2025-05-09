@@ -21,16 +21,16 @@ class Main:
         return cls._instance
 
 
-    __slots__ = ('_hosts')
+    __slots__ = ('_hosts', '_removed_hosts')
 
     def __init__(self):
-        self._hosts:dict = {}
+        self._hosts:dict         = {}
+        self._removed_hosts:dict = {}
 
 
     def __enter__(self):
-        self._get_host_information_by_zabbix_api()
-        self._get_information_by_snmp()
-        for i in self._hosts: print(i)
+        self._retrieve_host_information_from_zabbix_api()
+        self._collect_data_using_snmp()
         return self
 
 
@@ -38,20 +38,24 @@ class Main:
         return False
 
 
-    def _get_host_information_by_zabbix_api(self) -> None:
+    def _retrieve_host_information_from_zabbix_api(self) -> None:
+        print('>> Retrieving data from Zabbix API')
         with API_ZABBIX() as API:
             data:list[dict] = API._get_hosts_information()
-        self._select_devices(data)
+            self._hosts     = self._filter_devices(data)
 
 
-    def _select_devices(self, data:list[dict]) -> None:
-        self._hosts.update({
+    @staticmethod
+    def _filter_devices(data:list[dict]) -> None:
+        print('>> Filtering for specific devices')
+        return {
             device['host']: {'id': device['hostid'], 'name':device['name']}
             for device in data if main_secrets.IPS in device['host']
-        })
+        }
     
 
-    def _get_information_by_snmp(self) -> None:
+    def _collect_data_using_snmp(self) -> None:
+        print('>> Collecting data from devices using SNMP')
         asyncio.run(self._fetch_all_snmp())
 
 
@@ -63,9 +67,19 @@ class Main:
     
     def _add_oid_and_manufacturer(self, results:list[tuple]) -> None:
         for ip, sys_obj_id in results:
+            if 'ERROR' in sys_obj_id:
+                self._remove_host(ip, sys_obj_id)
+                continue
             oid:str                         = OID_Manager.get_enterprise_id(sys_obj_id) 
             self._hosts[ip]['oid']          = oid
             self._hosts[ip]['manufacturer'] = OID_Manager.get_enterprise_name_by_oid(oid)
+
+    
+    def _remove_host(self, ip:str, error:str)-> None:
+        removed_host:dict                = self._hosts.pop(ip)
+        self._removed_hosts[ip]          = removed_host
+        self._removed_hosts[ip]['error'] = error
+
 
 
 if __name__ == '__main__':
