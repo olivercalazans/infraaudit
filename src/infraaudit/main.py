@@ -6,9 +6,9 @@
 
 import asyncio
 import _secrets.main_secrets as main_secrets
-from zabbix.api_zabbix import API_ZABBIX
 from snmp.snmp_fetcher import SNMP_Fetcher
 from oid.oid_manager   import OID_Manager
+from zabbix.api_zabbix import API_ZABBIX
 
 
 class Main:
@@ -21,11 +21,14 @@ class Main:
         return cls._instance
 
 
-    __slots__ = ('_hosts', '_removed_hosts')
+
+    __slots__ = ('_hosts', '_removed_hosts', '_loop')
 
     def __init__(self):
-        self._hosts:dict         = {}
-        self._removed_hosts:dict = {}
+        self._hosts:dict                     = {}
+        self._removed_hosts:dict             = {}
+        self._loop:asyncio.AbstractEventLoop = None
+
 
 
     def __enter__(self):
@@ -38,11 +41,13 @@ class Main:
         return False
 
 
+
     def _retrieve_host_information_from_zabbix_api(self) -> None:
         print('>> Retrieving data from Zabbix API')
         with API_ZABBIX() as API:
             data:list[dict] = API._get_hosts_information()
             self._hosts     = self._filter_devices(data)
+
 
 
     @staticmethod
@@ -54,27 +59,45 @@ class Main:
         }
     
 
+
     def _collect_data_using_snmp(self) -> None:
         print('>> Collecting data from devices using SNMP')
-        asyncio.run(self._fetch_all_snmp())
-
-
-    async def _fetch_all_snmp(self) -> None:
-        tasks:list[asyncio.Task] = [SNMP_Fetcher().snmpget(ip) for ip in self._hosts]
-        results:list[tuple]      = await asyncio.gather(*tasks)
-        self._add_oid_and_manufacturer(results)
+        self._start_async_loop()
         
-    
-    def _add_oid_and_manufacturer(self, results:list[tuple]) -> None:
-        for ip, sys_obj_id in results:
-            if 'ERROR' in sys_obj_id:
-                self._remove_host(ip, sys_obj_id)
-                continue
-            oid:str                         = OID_Manager.get_enterprise_id(sys_obj_id) 
-            self._hosts[ip]['oid']          = oid
-            self._hosts[ip]['manufacturer'] = OID_Manager.get_enterprise_name_by_oid(oid)
+        print(f'{" "*6} - Collecting Enterprise name')
+        name_list:list[tuple] = self._loop.run_until_complete(self._fetch_all_snmp(OID_Manager.SYS_DESCRIPTION))
+        
+        print(f'{" "*6} - Collecting Enterprise ID')
+        id_list:list[tuple] = self._loop.run_until_complete(self._fetch_all_snmp(OID_Manager.SYS_OBJECT_ID))
+
+        self._loop.close()
+        self._add_manufacturer_name_and_id(name_list, id_list)
+
 
     
+    def _start_async_loop(self) -> None:
+        self._loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self._loop)
+
+
+    
+    async def _fetch_all_snmp(self, oid:str) -> list[tuple]:
+        tasks:list[asyncio.Task] = [SNMP_Fetcher().snmpget(ip, oid) for ip in self._hosts]
+        return await asyncio.gather(*tasks)
+
+
+    
+    def _add_manufacturer_name_and_id(self, name_list:list[tuple], id_list:list[tuple]) -> None:
+        for (ip, name), (_, id) in zip(name_list, id_list):
+            if 'ERROR' in name or 'ERROR' in id:
+                self._remove_host(ip, name)
+                continue
+            oid:str                         = OID_Manager.get_enterprise_id(id) 
+            self._hosts[ip]['oid']          = oid
+            self._hosts[ip]['manufacturer'] = name
+
+    
+
     def _remove_host(self, ip:str, error:str)-> None:
         removed_host:dict                = self._hosts.pop(ip)
         self._removed_hosts[ip]          = removed_host

@@ -17,13 +17,13 @@ class SNMP_Fetcher:
 
 
     @classmethod
-    async def snmpget(cls, ip: str) -> tuple[str, str]:
+    async def snmpget(cls, ip:str, oid:str) -> tuple[str, str]:
         result = await get_cmd(
             cls.ENGINE,
             cls.COMMUNITY,
             await UdpTransportTarget.create((ip, 161)),
             cls.CONTEXT,
-            ObjectType(ObjectIdentity(OID_Manager.SYS_OBJECT_ID)),
+            ObjectType(ObjectIdentity(oid)),
             lookupMib=False,
             lexicographicMode=False,
         )
