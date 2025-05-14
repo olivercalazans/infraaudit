@@ -34,7 +34,11 @@ class Main:
     def __enter__(self):
         self._retrieve_host_information_from_zabbix_api()
         self._collect_data_using_snmp()
+        for i in self._hosts:print(i, self._hosts[i])
+        print('===============================================')
+        for i in self._removed_hosts:print(i, self._removed_hosts[i])
         return self
+
 
 
     def __exit__(self, exc_type, exc_value, traceback):
@@ -70,8 +74,19 @@ class Main:
         print(f'{" "*6} - Collecting Enterprise ID')
         id_list:list[tuple] = self._loop.run_until_complete(self._fetch_all_snmp(OID_Manager.SYS_OBJECT_ID))
 
-        self._loop.close()
+        self._close_jobs()
         self._add_manufacturer_name_and_id(name_list, id_list)
+
+
+
+    def _close_jobs(self) -> None:
+        SNMP_Fetcher.finish_engine()
+
+        pending = asyncio.all_tasks(self._loop)
+        if pending:
+            self._loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+        
+        self._loop.close()
 
 
     
@@ -94,7 +109,7 @@ class Main:
                 continue
             oid:str                         = OID_Manager.get_enterprise_id(id) 
             self._hosts[ip]['oid']          = oid
-            self._hosts[ip]['manufacturer'] = name
+            self._hosts[ip]['manufacturer'] = name.strip()
 
     
 

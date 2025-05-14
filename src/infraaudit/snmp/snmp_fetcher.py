@@ -5,7 +5,6 @@
 
 
 from pysnmp.hlapi.v3arch.asyncio import *
-from oid.oid_manager             import OID_Manager
 import _secrets.snmp_secrets as snmp_secrets
 
 
@@ -34,3 +33,15 @@ class SNMP_Fetcher:
             return (ip, f'ERROR: {str(error_indication or error_status)}')
         
         return (ip, str(var_binds[-1][-1]))
+    
+
+
+    @classmethod
+    def finish_engine(cls) -> None:
+        if cls.ENGINE:
+            cls.ENGINE.transport_dispatcher.close_dispatcher()
+            cls.ENGINE = None
+
+
+
+
