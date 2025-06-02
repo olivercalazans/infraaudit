@@ -5,20 +5,28 @@
 
 
 import requests
-import _secrets
+import _secrets.zabbix_secrets as zabbix_secrets
 
 
 class API_ZABBIX():
 
-    __slots__ = ('hosts')
+    _instance = None
+    
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = object().__new__(cls)
+        return cls._instance
+
+
+
+    __slots__ = ()
 
     def __enter__(self):
-        self.hosts = self._get_hosts_information()
         return self
     
     def __exit__(self, exc_type, exc_value, traceback) -> list:
-        return False
-    
+        return False    
+
 
 
     def _get_hosts_information(self) -> None:
@@ -35,7 +43,7 @@ class API_ZABBIX():
             "id": 2
         }
 
-        response = requests.post(_secrets.ZABBIX_URL, json=hosts_payload)
+        response = requests.post(zabbix_secrets.ZABBIX_URL, json=hosts_payload)
         response.raise_for_status()
         return response.json()["result"]
 
@@ -46,12 +54,12 @@ class API_ZABBIX():
             "jsonrpc": "2.0",
             "method": "user.login",
             "params": {
-                "user":_secrets. USER,
-                "password": _secrets.PASSWORD,
+                "user":zabbix_secrets.USER,
+                "password": zabbix_secrets.PASSWORD,
             },
             "id": 1
         }
 
-        response = requests.post(_secrets.ZABBIX_URL, json=auth_payload)
+        response = requests.post(zabbix_secrets.ZABBIX_URL, json=auth_payload)
         response.raise_for_status()
         return response.json()["result"]
