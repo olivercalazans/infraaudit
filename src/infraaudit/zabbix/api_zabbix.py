@@ -6,6 +6,7 @@
 
 import requests
 import _secrets.zabbix_secrets as zabbix_secrets
+from models.data import Data
 
 
 class API_ZABBIX():
@@ -19,7 +20,12 @@ class API_ZABBIX():
 
 
 
-    __slots__ = ()
+    __slots__ = ('_data')
+
+    def __init__(self, data:Data):
+        self._data:Data = data
+
+
 
     def __enter__(self):
         return self
@@ -45,7 +51,7 @@ class API_ZABBIX():
 
         response = requests.post(zabbix_secrets.ZABBIX_URL, json=hosts_payload)
         response.raise_for_status()
-        return response.json()["result"]
+        self._data.filter_devices(response.json()["result"])
 
 
     
