@@ -56,8 +56,9 @@ class Main:
             print('>> Collecting data from devices using SNMP')
             self._start_async_loop()
 
-            self._run_tasks('Collecting Enterprise name', OID_Manager.SYS_DESCRIPTION, 'manufacturer')
-            self._run_tasks('Collecting Enterprise ID', OID_Manager.SYS_OBJECT_ID, 'oid')
+            self._run_tasks('Enterprise name', OID_Manager.SYS_DESCRIPTION, 'manufacturer')
+            self._run_tasks('Enterprise ID', OID_Manager.SYS_OBJECT_ID, 'oid')
+            self._run_tasks('Firmware Version', OID_Manager.FIRMWARE_VERSION, 'firmware')
 
             self._close_jobs()
 
@@ -71,7 +72,7 @@ class Main:
 
 
     def _run_tasks(self, message:str, oid:str, key:str) -> list[tuple]:
-        print(f'{" "*6} - {message}')
+        print(f'{" "*6} - Collecting {message}')
         return self._loop.run_until_complete(self._fetch_all_snmp(oid, key))
 
 
