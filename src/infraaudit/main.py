@@ -22,11 +22,12 @@ class Main:
 
 
 
-    __slots__ = ('_data', '_loop')
+    __slots__ = ('_data', '_loop', '_snmp_fetcher')
 
     def __init__(self):
         self._data:Data                      = Data()
         self._loop:asyncio.AbstractEventLoop = None
+        self._snmp_fetcher:SNMP_Fetcher      = None
 
 
 
@@ -45,50 +46,44 @@ class Main:
 
     def _retrieve_host_information_from_zabbix_api(self) -> None:
         print('>> Retrieving data from Zabbix API')
-        with API_ZABBIX() as API:
-            data:list[dict] = API._get_hosts_information()
-            self._data.filter_devices(data)
-    
+        with API_ZABBIX(self._data) as API:
+            API._get_hosts_information()
+
 
 
     def _collect_data_using_snmp(self) -> None:
-        print('>> Collecting data from devices using SNMP')
-        self._start_async_loop()
+        with SNMP_Fetcher(self._data) as self._snmp_fetcher:
+            print('>> Collecting data from devices using SNMP')
+            self._start_async_loop()
 
-        name_list:list[tuple] = self._collect_enterprise_name()
-        id_list:list[tuple]   = self._collect_enterprise_id
+            self._run_tasks('Collecting Enterprise name', OID_Manager.SYS_DESCRIPTION, 'manufacturer')
+            self._run_tasks('Collecting Enterprise ID', OID_Manager.SYS_OBJECT_ID, 'oid')
 
-        self._close_jobs()
-        self._data.add_manufacturer_name_and_id(name_list, id_list)
+            self._close_jobs()
 
     
 
     def _start_async_loop(self) -> None:
         self._loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self._loop)
-
-
-    
-    def _collect_enterprise_name(self) -> list[tuple]:
-        print(f'{" "*6} - Collecting Enterprise name')
-        return self._loop.run_until_complete(self._fetch_all_snmp(OID_Manager.SYS_DESCRIPTION))
+        self._snmp_fetcher = SNMP_Fetcher(self._data)
 
 
 
-    def _collect_enterprise_id(self) -> list[tuple]:
-        print(f'{" "*6} - Collecting Enterprise ID')
-        return self._loop.run_until_complete(self._fetch_all_snmp(OID_Manager.SYS_OBJECT_ID))
+    def _run_tasks(self, message:str, oid:str, key:str) -> list[tuple]:
+        print(f'{" "*6} - {message}')
+        return self._loop.run_until_complete(self._fetch_all_snmp(oid, key))
 
 
 
-    async def _fetch_all_snmp(self, oid:str) -> list[tuple]:
-        tasks:list[asyncio.Task] = [SNMP_Fetcher().snmpget(ip, oid) for ip in self._data.hosts]
+    async def _fetch_all_snmp(self, oid:str, key:str) -> list[tuple]:
+        tasks:list[asyncio.Task] = [self._snmp_fetcher.snmpget(ip, oid, key) for ip in self._data.hosts]
         return await asyncio.gather(*tasks)
 
 
 
     def _close_jobs(self) -> None:
-        SNMP_Fetcher.finish_engine()
+        self._snmp_fetcher.finish_engine()
 
         pending = asyncio.all_tasks(self._loop)
         if pending:
@@ -99,9 +94,8 @@ class Main:
 
     
     def _display_result(self) -> None:
-        for i in self._data.hosts:print(i, self._data.hosts[i])
-        print('===============================================')
-        for i in self._data.removed_hosts:print(i, self._data.hosts[i])
+        for i in self._data.hosts:
+            print(i, self._data.hosts[i])
 
 
 
