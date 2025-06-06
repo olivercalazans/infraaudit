@@ -35,6 +35,7 @@ class Main:
         self._retrieve_host_information_from_zabbix_api()
         self._collect_data_using_snmp()
         self._display_result()
+        self._display_devices_with_no_response()
         return self
 
 
@@ -52,51 +53,62 @@ class Main:
 
 
     def _collect_data_using_snmp(self) -> None:
-        with SNMP_Fetcher(self._data) as self._snmp_fetcher:
-            print('>> Collecting data from devices using SNMP')
-            self._start_async_loop()
+        print('>> Collecting data from devices using SNMP')
+        self._start_async_loop()
+        self._run_snmp_fetcher()
+        self._close_jobs()
 
-            self._run_tasks('Enterprise name', OID_Manager.SYS_DESCRIPTION, 'manufacturer')
-            self._run_tasks('Enterprise ID', OID_Manager.SYS_OBJECT_ID, 'oid')
-            self._run_tasks('Firmware Version', OID_Manager.FIRMWARE_VERSION, 'firmware')
-
-            self._close_jobs()
 
     
-
     def _start_async_loop(self) -> None:
         self._loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self._loop)
-        self._snmp_fetcher = SNMP_Fetcher(self._data)
-
-
-
-    def _run_tasks(self, message:str, oid:str, key:str) -> list[tuple]:
-        print(f'{" "*6} - Collecting {message}')
-        return self._loop.run_until_complete(self._fetch_all_snmp(oid, key))
-
-
-
-    async def _fetch_all_snmp(self, oid:str, key:str) -> list[tuple]:
-        tasks:list[asyncio.Task] = [self._snmp_fetcher.snmpget(ip, oid, key) for ip in self._data.hosts]
-        return await asyncio.gather(*tasks)
 
 
 
     def _close_jobs(self) -> None:
-        self._snmp_fetcher.finish_engine()
-
         pending = asyncio.all_tasks(self._loop)
         if pending:
             self._loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
         
         self._loop.close()
 
+    
+
+    def _run_snmp_fetcher(self) -> None:
+        with SNMP_Fetcher(self._data) as self._snmp_fetcher:
+            self._get_ruckus_information()
+
+
+
+    def _run_tasks(self, oids:str) -> list[tuple]:
+        return self._loop.run_until_complete(self._fetch_all_snmp(oids))
+
+
+
+    async def _fetch_all_snmp(self, oid:str) -> list[tuple]:
+        tasks:list[asyncio.Task] = [self._snmp_fetcher.snmpget(ip, oid) for ip in self._data.hosts]
+        return await asyncio.gather(*tasks)
+
+
+
+    def _get_ruckus_information(self) -> None:
+        print('   # Collecting data from Ruckus APs')
+        oids:list = [OID_Manager.SYS_DESCRIPTION, OID_Manager.RUCKUS_AP_MODEL, OID_Manager.RUCKUS_FIRMWARE_VERSION]
+        self._run_tasks(oids)
+        
 
     
     def _display_result(self) -> None:
         for i in self._data.hosts:
             print(i, self._data.hosts[i])
+
+    
+
+    def _display_devices_with_no_response(self) -> None:
+        for ip, info in self._data.removed_hosts.items():
+            print(f'{ip:<15} ({info["name"]}): Error: {info["error"]}')
+
 
 
 

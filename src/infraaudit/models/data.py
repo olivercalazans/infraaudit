@@ -5,7 +5,7 @@
 
 
 from asyncio     import Lock
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from _secrets    import main_secrets
 
 
@@ -21,20 +21,34 @@ class Data:
 
 
 
-    _lock:Lock = Lock()
-    hosts:dict = None
+    _lock:Lock         = Lock()
+    hosts:dict         = None
+    information:dict   = field(default_factory=dict)
+    removed_hosts:dict = field(default_factory=dict)
 
 
 
     def filter_devices(self, data:list[dict]) -> None:
         print('>> Filtering for specific devices')
         self.hosts = {
-            device['host']: {'id': device['hostid'], 'name':device['name']}
+            device['host']: {'name': device['name']}
             for device in data if main_secrets.IPS in device['host']
         }
 
 
     
-    async def add_value(self, ip:str, key:str, value:str) -> None:
+    async def add_value(self, ip:str, values:list) -> None:
         async with self._lock:
-            self.hosts[ip][key] = value.strip()
+            manufacturer:str               = values.pop(0)
+            info:tuple                     = tuple(values) 
+            self.hosts[ip]['manufacturer'] = manufacturer
+            self.hosts[ip]['info']         = info
+            self.information[info]         = None
+
+
+    
+    async def remove_host(self, ip:str, error:str) -> None:
+        async with self._lock:
+            print(ip, error)
+            device:dict            = self.hosts.pop(ip)
+            self.removed_hosts[ip] = {**device, 'error': error}
