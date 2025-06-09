@@ -1,5 +1,5 @@
 # MIT License
-# Copyright (c) 2024 Oliver Calazans
+# Copyright (c) 2025 Oliver Calazans
 # Repository: https://github.com/olivercalazans/infraaudit
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software...
 
