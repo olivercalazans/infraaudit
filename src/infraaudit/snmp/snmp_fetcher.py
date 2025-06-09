@@ -1,10 +1,9 @@
 # MIT License
-# Copyright (c) 2024 Oliver Calazans
+# Copyright (c) 2025 Oliver Calazans
 # Repository: https://github.com/olivercalazans/infraaudit
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software...
 
 
-import asyncio
 from pysnmp.hlapi.v3arch.asyncio import *
 import _secrets.snmp_secrets as snmp_secrets
 from models.data import Data
@@ -21,51 +20,37 @@ class SNMP_Fetcher:
 
 
 
-    ENGINE:SnmpEngine       = SnmpEngine()
-    COMMUNITY:CommunityData = CommunityData(snmp_secrets.COMMUNITY)
-    CONTEXT:ContextData     = ContextData()
-
-
-
-    __slots__ = ('_data')
+    __slots__ = ('_data', '_ENGINE', '_COMMUNITY', '_CONTEXT')
 
     def __init__(self, data:Data):
-        self._data:Data = data
-
-    
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.finish_engine()
-        return False
+        self._data:Data               = data
+        self._ENGINE:SnmpEngine       = SnmpEngine()
+        self._COMMUNITY:CommunityData = CommunityData(snmp_secrets.COMMUNITY)
+        self._CONTEXT:ContextData     = ContextData()
 
 
 
-    async def snmpget(self, ip:str, oid:str, key:str) -> None:
+    async def snmpget(self, ip:str, oids:str) -> None:
         result = await get_cmd(
-            self.ENGINE,
-            self.COMMUNITY,
+            self._ENGINE,
+            self._COMMUNITY,
             await UdpTransportTarget.create((ip, 161)),
-            self.CONTEXT,
-            ObjectType(ObjectIdentity(oid)),
+            self._CONTEXT,
+            *[ObjectType(ObjectIdentity(oid)) for oid in oids],
             lookupMib=False,
             lexicographicMode=False,
         )
         
         error_indication, error_status, error_index, var_binds = result
 
-        value = str(error_indication or error_status or var_binds[-1][-1])
-        await self._data.add_value(ip, key, value)
+        await self._data.add_response([ip, error_indication, error_status, error_index, var_binds])
 
 
 
-    @classmethod
-    def finish_engine(cls) -> None:
-        if cls.ENGINE:
-            cls.ENGINE.transport_dispatcher.close_dispatcher()
-            cls.ENGINE = None
+    def finish_engine(self) -> None:
+        if self._ENGINE:
+            self._ENGINE.transport_dispatcher.close_dispatcher()
+            self._ENGINE = None
 
 
 
