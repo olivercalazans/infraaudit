@@ -6,7 +6,6 @@
 
 import asyncio
 from models.data       import Data
-from oid.oid_manager   import OID_Manager
 from snmp.snmp_fetcher import SNMP_Fetcher
 
 
@@ -18,6 +17,16 @@ class SNMP_Manager:
         if cls._instance is None:
             cls._instance = object().__new__(cls)
         return cls._instance
+    
+
+
+    ENTERPRISE:str      = '1.3.6.1.4.1'
+    SYS_DESCRIPTION:str = '1.3.6.1.2.1.1.1.0'
+    SYS_OBJECT_ID:str   = '1.3.6.1.2.1.1.2.0'
+    
+    # RUCKUS
+    RUCKUS_FIRMWARE_VERSION:str = '1.3.6.1.4.1.25053.1.1.3.1.1.1.1.1.3.1'
+    RUCKUS_AP_MODEL:str         = '1.3.6.1.4.1.25053.1.1.2.1.1.1.1.0'
 
 
 
@@ -32,7 +41,13 @@ class SNMP_Manager:
 
     def __enter__(self):
         self._start_async_loop_and_snmp_engines()
+        self._verify_which_devices_are_active()
+        self._data.prune_offline_devices()
+        self._get_ruckus_information()
+        self._data.update_information()
         return self
+
+
 
     def __exit__(self, exc_type, exc_value, traceback):
         self._snmp_fetcher.finish_engine()
@@ -61,15 +76,13 @@ class SNMP_Manager:
 
     def _verify_which_devices_are_active(self) -> None:
         print('  # Verifying which devices are active')
-        self._run_tasks([OID_Manager.SYS_OBJECT_ID])
-        self._data.prune_offline_devices()
+        self._run_tasks([self.SYS_OBJECT_ID])
     
 
 
     def _get_ruckus_information(self) -> None:
         print('  # Collecting data from Ruckus APs')
-        self._run_tasks([OID_Manager.SYS_DESCRIPTION, OID_Manager.RUCKUS_AP_MODEL, OID_Manager.RUCKUS_FIRMWARE_VERSION])
-        self._data.update_information()
+        self._run_tasks([self.SYS_DESCRIPTION, self.RUCKUS_AP_MODEL, self.RUCKUS_FIRMWARE_VERSION])
 
     
 

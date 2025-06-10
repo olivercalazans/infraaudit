@@ -43,16 +43,15 @@ class Main:
 
     def _retrieve_host_information_from_zabbix_api(self) -> None:
         print('>> Retrieving data from Zabbix API')
-        with API_ZABBIX(self._data) as API:
-            API._get_hosts_information()
+        with API_ZABBIX(self._data):
+            ...
 
 
     
     def _run_snmp_probes(self) -> None:
         print('>> Running SNMP probes')
-        with SNMP_Manager(self._data) as manager:
-            manager._verify_which_devices_are_active()
-            manager._get_ruckus_information()
+        with SNMP_Manager(self._data):
+            ...
         
 
     
