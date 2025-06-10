@@ -4,9 +4,10 @@
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software...
 
 
+from asyncio                     import Lock
 from pysnmp.hlapi.v3arch.asyncio import *
+from models.data                 import Data
 import _secrets.snmp_secrets as snmp_secrets
-from models.data import Data
 
 
 class SNMP_Fetcher:
@@ -20,13 +21,14 @@ class SNMP_Fetcher:
 
 
 
-    __slots__ = ('_data', '_ENGINE', '_COMMUNITY', '_CONTEXT')
+    __slots__ = ('_data', '_ENGINE', '_COMMUNITY', '_CONTEXT', '_lock')
 
     def __init__(self, data:Data):
         self._data:Data               = data
         self._ENGINE:SnmpEngine       = SnmpEngine()
         self._COMMUNITY:CommunityData = CommunityData(snmp_secrets.COMMUNITY)
         self._CONTEXT:ContextData     = ContextData()
+        self._lock:Lock               = Lock()
 
 
 
@@ -41,9 +43,15 @@ class SNMP_Fetcher:
             lexicographicMode=False,
         )
         
-        error_indication, error_status, error_index, var_binds = result
+        #error_indication, error_status, error_index, var_binds = result
 
-        await self._data.add_response([ip, error_indication, error_status, error_index, var_binds])
+        await self.add_response([ip, *result])
+
+    
+
+    async def add_response(self, response:list) -> None:
+        async with self._lock:
+            self._data.responses.append(response)
 
 
 

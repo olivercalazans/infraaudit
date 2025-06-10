@@ -4,7 +4,6 @@
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software...
 
 
-from asyncio     import Lock
 from dataclasses import dataclass, field
 from _secrets    import main_secrets
 
@@ -22,25 +21,19 @@ class Data:
 
 
     responses:list     = field(default_factory=list)
-    _lock:Lock         = Lock()
     hosts:dict         = None
-    information:set    = field(default_factory=set)
     removed_hosts:dict = field(default_factory=dict)
+    information:set    = field(default_factory=set)
 
 
 
-    def filter_devices(self, data:list[dict]) -> None:
+    def filter_devices(self) -> None:
         print('>> Filtering for specific devices')
         self.hosts = {
             device['host']: {'name': device['name']}
-            for device in data if main_secrets.IPS in device['host']
+            for device in self.responses if main_secrets.IPS in device['host']
         }
-
-
-    
-    async def add_response(self, response:tuple) -> None:
-        async with self._lock:
-            self.responses.append(response)
+        self.responses.clear()
 
 
 
