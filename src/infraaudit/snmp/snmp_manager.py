@@ -41,7 +41,13 @@ class SNMP_Manager:
 
     def __enter__(self):
         self._start_async_loop_and_snmp_engines()
+        self._verify_which_devices_are_active()
+        self._data.prune_offline_devices()
+        self._get_ruckus_information()
+        self._data.update_information()
         return self
+
+
 
     def __exit__(self, exc_type, exc_value, traceback):
         self._snmp_fetcher.finish_engine()

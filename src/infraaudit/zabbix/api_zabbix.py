@@ -30,6 +30,8 @@ class API_ZABBIX():
 
 
     def __enter__(self):
+        self._get_hosts_information()
+        self._data.filter_devices()
         return self
     
     def __exit__(self, exc_type, exc_value, traceback) -> list:

@@ -29,7 +29,6 @@ class Main:
 
     def __enter__(self):
         self._retrieve_host_information_from_zabbix_api()
-        self._data.filter_devices()
         self._run_snmp_probes()
         self._display_result()
         self._display_devices_with_no_response()
@@ -44,18 +43,15 @@ class Main:
 
     def _retrieve_host_information_from_zabbix_api(self) -> None:
         print('>> Retrieving data from Zabbix API')
-        with API_ZABBIX(self._data) as api:
-            api._get_hosts_information()
+        with API_ZABBIX(self._data):
+            ...
 
 
     
     def _run_snmp_probes(self) -> None:
         print('>> Running SNMP probes')
-        with SNMP_Manager(self._data) as manager:
-            manager._verify_which_devices_are_active()
-            self._data.prune_offline_devices()
-            manager._get_ruckus_information()
-            self._data.update_information()
+        with SNMP_Manager(self._data):
+            ...
         
 
     
