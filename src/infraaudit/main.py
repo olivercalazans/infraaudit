@@ -11,64 +11,51 @@ from zabbix.api_zabbix import API_ZABBIX
 
 class Main:
     
-    _instance:"Main" = None
-    
-    def __new__(cls, *args, **kwargs):
-        if cls._instance is None:
-            cls._instance = object().__new__(cls)
-        return cls._instance
+    _data:Data = Data()
+
+
+    @classmethod
+    def execute(cls):
+        cls._retrieve_host_information_from_zabbix_api()
+        cls._run_snmp_probes()
+        cls._display_result()
+        cls._display_devices_with_no_response()
 
 
 
-    __slots__ = ('_data')
-
-    def __init__(self):
-        self._data:Data = Data()
-
-
-
-    def __enter__(self):
-        self._retrieve_host_information_from_zabbix_api()
-        self._run_snmp_probes()
-        self._display_result()
-        self._display_devices_with_no_response()
-        return self
-
-
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        return False
-
-
-
-    def _retrieve_host_information_from_zabbix_api(self) -> None:
+    @classmethod
+    def _retrieve_host_information_from_zabbix_api(cls) -> None:
         print('>> Retrieving data from Zabbix API')
-        with API_ZABBIX(self._data):
+        with API_ZABBIX(cls._data):
             ...
 
 
-    
-    def _run_snmp_probes(self) -> None:
+
+    @classmethod
+    def _run_snmp_probes(cls) -> None:
         print('>> Running SNMP probes')
-        with SNMP_Manager(self._data):
+        with SNMP_Manager(cls._data):
             ...
-        
 
-    
-    def _display_result(self) -> None:
-        for i in self._data.hosts:
-            print(i, self._data.hosts[i])
 
-    
 
-    def _display_devices_with_no_response(self) -> None:
-        for ip, info in self._data.removed_hosts.items():
-            print(f'{ip:<15} ({info["name"]}): Error: {info["error"]}')
+    @classmethod
+    def _display_result(cls) -> None:
+        for i in cls._data.hosts:
+            print(i, cls._data.hosts[i])
+
+
+
+    @classmethod
+    def _display_devices_with_no_response(cls) -> None:
+        print('\n# DEVICES WITH NO RESPONSES', '=' * 60)
+        for ip, info in cls._data.removed_hosts.items():
+            print(f'{info["name"]:<12} {ip:<15} -> Error: {info["error"]}')
 
 
 
 
 
 if __name__ == '__main__':
-    with Main() as infraaudit:
-        ...
+    infraaudit = Main()
+    infraaudit.execute()

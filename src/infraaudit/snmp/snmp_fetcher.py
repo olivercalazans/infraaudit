@@ -43,13 +43,11 @@ class SNMP_Fetcher:
             lexicographicMode=False,
         )
         
-        #error_indication, error_status, error_index, var_binds = result
-
-        await self.add_response([ip, *result])
+        await self._add_response([ip, *result])
 
     
 
-    async def add_response(self, response:list) -> None:
+    async def _add_response(self, response:list) -> None:
         async with self._lock:
             self._data.responses.append(response)
 

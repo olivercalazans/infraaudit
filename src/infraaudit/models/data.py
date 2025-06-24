@@ -31,35 +31,60 @@ class Data:
         print('>> Filtering for specific devices')
         self.hosts = {
             device['host']: {'name': device['name']}
-            for device in self.responses if main_secrets.IPS in device['host']
+            for device in self.responses if self._get_ip_prefix(device['host']) in main_secrets.IPS.keys()
         }
         self.responses.clear()
+
+    
+
+    @staticmethod
+    def _get_ip_prefix(ip:str) -> str:
+        return '.'.join(ip.split('.')[:3]) + '.'
 
 
 
     def prune_offline_devices(self) -> None:
         len_all_hosts:int = len(self.hosts)
-        for ip, error_indication, error_status, error_index, _ in self.responses:
-            if error_indication or error_status or error_index:
-                error:str              = str(error_indication or error_status or error_index)
-                device:dict            = self.hosts.pop(ip)
-                self.removed_hosts[ip] = {**device, 'error': error}
+        for result in self.responses:
+            if not result[-1]:
+                self._add_offline_device_to_the_list(result[:-1])
+        
+        self._display_removed_devices(len(self.removed_hosts), len_all_hosts)
         self.responses.clear()
-        print(f'    - Removed hosts: {len(self.removed_hosts)} ({len_all_hosts} -> {len_all_hosts - len(self.removed_hosts)})')
-
 
     
+
+    def _add_offline_device_to_the_list(self, result:list) -> None:
+        ip, error_indication, error_status, error_index = result
+        error:str              = str(error_indication or error_status or error_index)
+        device:dict            = self.hosts.pop(ip)
+        self.removed_hosts[ip] = {**device, 'error': error}
+    
+
+
+    @staticmethod
+    def _display_removed_devices(removed_hosts:int, all_hosts:int) -> None:
+        result:int = all_hosts - removed_hosts
+        print(f'\t- Removed hosts: {removed_hosts} ({all_hosts} -> {result})')
+
+
+
     def update_information(self) -> None:
         for  ip, error_indication, error_status, error_index, var_binds in self.responses:
 
             if error_indication or error_status or error_index:
                 self.hosts[ip]['error'] = str(error_indication or error_status or error_index)
                 continue
-
-            values:list = [str(i[-1]).strip() for i in var_binds]
-            manufacturer:str               = values.pop(0)
-            info:tuple                     = tuple(values) 
-            self.hosts[ip]['manufacturer'] = manufacturer
-            self.hosts[ip]['info']         = info
-            self.information.add(info)
+    
+            self._update_device_information(ip, var_binds)
         self.responses.clear()
+    
+
+
+    def _update_device_information(self, ip:str, var_binds:object) -> None:
+        values:list                    = [str(i[-1]).strip() for i in var_binds]
+        manufacturer:str               = values.pop(0)
+        info:tuple                     = tuple(values)
+        self.hosts[ip]['manufacturer'] = manufacturer
+        self.hosts[ip]['info']         = info
+        self.information.add(info)
