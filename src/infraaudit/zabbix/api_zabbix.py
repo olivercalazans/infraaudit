@@ -34,6 +34,8 @@ class API_ZABBIX():
         self._data.filter_devices()
         return self
     
+
+    
     def __exit__(self, exc_type, exc_value, traceback) -> list:
         return False    
 

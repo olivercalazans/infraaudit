@@ -21,7 +21,7 @@ class Data:
 
 
     responses:list     = field(default_factory=list)
-    hosts:dict         = None
+    hosts:dict         = field(default_factory=dict)
     removed_hosts:dict = field(default_factory=dict)
     information:set    = field(default_factory=set)
 
@@ -29,10 +29,11 @@ class Data:
 
     def filter_devices(self) -> None:
         print('>> Filtering for specific devices')
-        self.hosts = {
-            device['host']: {'name': device['name']}
-            for device in self.responses if self._get_ip_prefix(device['host']) in main_secrets.IPS.keys()
-        }
+        for device in self.responses:
+            ip:str = device['interfaces'][0]['ip']
+            if self._get_ip_prefix(ip) in main_secrets.IPS.keys():
+                self.hosts[ip] = {'name': device['name']}
+
         self.responses.clear()
 
     
