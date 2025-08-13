@@ -5,7 +5,7 @@
 
 
 from dataclasses import dataclass, field
-from _secrets    import main_secrets
+from _secrets.secrets import Secret_Data
 
 
 @dataclass(slots=True)
@@ -23,7 +23,7 @@ class Data:
     responses:list     = field(default_factory=list)
     hosts:dict         = field(default_factory=dict)
     removed_hosts:dict = field(default_factory=dict)
-    information:set    = field(default_factory=set)
+    information:set    = field(default_factory=lambda: {i:set() for i in Secret_Data.get_ip_prefixes()})
 
 
 
@@ -31,7 +31,8 @@ class Data:
         print('>> Filtering for specific devices')
         for device in self.responses:
             ip:str = device['interfaces'][0]['ip']
-            if self._get_ip_prefix(ip) in main_secrets.IPS.keys():
+            
+            if self._get_ip_prefix(ip) in Secret_Data.get_ip_prefixes():
                 self.hosts[ip] = {'name': device['name']}
 
         self.responses.clear()
@@ -88,4 +89,5 @@ class Data:
         info:tuple                     = tuple(values)
         self.hosts[ip]['manufacturer'] = manufacturer
         self.hosts[ip]['info']         = info
-        self.information.add(info)
+        prefix:str                     = self._get_ip_prefix(ip)
+        self.information[prefix].add(info)

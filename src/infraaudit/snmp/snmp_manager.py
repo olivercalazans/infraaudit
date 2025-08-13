@@ -7,7 +7,7 @@
 import asyncio
 from models.data       import Data
 from snmp.snmp_fetcher import SNMP_Fetcher
-
+import _secrets.oids   as oids
 
 class SNMP_Manager:
 
@@ -17,16 +17,6 @@ class SNMP_Manager:
         if cls._instance is None:
             cls._instance = object().__new__(cls)
         return cls._instance
-    
-
-
-    ENTERPRISE:str      = '1.3.6.1.4.1'
-    SYS_DESCRIPTION:str = '1.3.6.1.2.1.1.1.0'
-    SYS_OBJECT_ID:str   = '1.3.6.1.2.1.1.2.0'
-    
-    # RUCKUS
-    RUCKUS_FIRMWARE_VERSION:str = '1.3.6.1.4.1.25053.1.1.3.1.1.1.1.1.3.1'
-    RUCKUS_AP_MODEL:str         = '1.3.6.1.4.1.25053.1.1.2.1.1.1.1.0'
 
 
 
@@ -76,13 +66,13 @@ class SNMP_Manager:
 
     def _verify_which_devices_are_active(self) -> None:
         print('  # Verifying which devices are active')
-        self._run_tasks([self.SYS_OBJECT_ID])
+        self._run_tasks([oids.SYS_OBJECT_ID])
     
 
 
     def _get_ruckus_information(self) -> None:
         print('  # Collecting data from Ruckus APs')
-        self._run_tasks([self.SYS_DESCRIPTION, self.RUCKUS_AP_MODEL, self.RUCKUS_FIRMWARE_VERSION])
+        self._run_tasks([oids.SYS_DESCRIPTION, oids.RUCKUS_AP_MODEL, oids.RUCKUS_FIRMWARE_VERSION])
 
     
 

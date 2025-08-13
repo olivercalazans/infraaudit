@@ -6,8 +6,8 @@
 import getpass
 import requests
 import sys
-import _secrets.zabbix_secrets as zabbix_secrets
-from models.data import Data
+from _secrets.secrets import Secret_Data
+from models.data      import Data
 
 
 class API_ZABBIX():
@@ -55,7 +55,7 @@ class API_ZABBIX():
 
     def _get_api_token(self) -> None:
         auth_payload:dict = self._get_token_request_payload()
-        response          = requests.post(zabbix_secrets.ZABBIX_URL, json=auth_payload)
+        response          = requests.post(Secret_Data.ZABBIX_URL, json=auth_payload)
         response.raise_for_status()
         response = response.json()
 
@@ -73,7 +73,7 @@ class API_ZABBIX():
             "jsonrpc": "2.0",
             "method": "user.login",
             "params": {
-                "user":zabbix_secrets.USER,
+                "user":Secret_Data.USER,
                 "password": password,
             },
             "id": 1
@@ -83,7 +83,7 @@ class API_ZABBIX():
 
     def _get_information_from_zabbix(self) -> None:
         hosts_payload:dict = self._get_hosts_information_resquest_payload()
-        response = requests.post(zabbix_secrets.ZABBIX_URL, json=hosts_payload)
+        response = requests.post(Secret_Data.ZABBIX_URL, json=hosts_payload)
         response.raise_for_status()
         response = response.json()
 

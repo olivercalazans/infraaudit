@@ -7,7 +7,7 @@
 from asyncio                     import Lock
 from pysnmp.hlapi.v3arch.asyncio import *
 from models.data                 import Data
-import _secrets.snmp_secrets as snmp_secrets
+from _secrets.secrets            import Secret_Data
 
 
 class SNMP_Fetcher:
@@ -26,7 +26,7 @@ class SNMP_Fetcher:
     def __init__(self, data:Data):
         self._data:Data               = data
         self._ENGINE:SnmpEngine       = SnmpEngine()
-        self._COMMUNITY:CommunityData = CommunityData(snmp_secrets.COMMUNITY)
+        self._COMMUNITY:CommunityData = CommunityData(Secret_Data.COMMUNITY)
         self._CONTEXT:ContextData     = ContextData()
         self._lock:Lock               = Lock()
 
@@ -38,7 +38,7 @@ class SNMP_Fetcher:
             self._COMMUNITY,
             await UdpTransportTarget.create((ip, 161)),
             self._CONTEXT,
-            *[ObjectType(ObjectIdentity(oid)) for oid in oids],
+           *[ObjectType(ObjectIdentity(oid)) for oid in oids],
             lookupMib=False,
             lexicographicMode=False,
         )

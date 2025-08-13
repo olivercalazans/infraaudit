@@ -7,6 +7,7 @@
 from models.data       import Data
 from snmp.snmp_manager import SNMP_Manager
 from zabbix.api_zabbix import API_ZABBIX
+from _secrets.secrets import Secret_Data
 
 
 class Main:
@@ -41,8 +42,18 @@ class Main:
 
     @classmethod
     def _display_result(cls) -> None:
-        for i in cls._data.hosts:
-            print(i, cls._data.hosts[i])
+        cls._display_ap_ruckus_result()
+    
+
+
+    @classmethod
+    def _display_ap_ruckus_result(cls) -> None:
+        ip_prefix:str = Secret_Data.IP_PREFIX['AP Ruckus']
+        if not ip_prefix in cls._data.information: return
+        
+        print('\n# AP RUCKUS RESULTS')
+        for device, firmware in cls._data.information[ip_prefix]:
+            print(f'Device model: {device:>7} - Firmware Version: {firmware}')
 
 
 
