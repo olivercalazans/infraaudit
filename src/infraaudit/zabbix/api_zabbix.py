@@ -47,20 +47,23 @@ class API_ZABBIX():
             try:
                 self._get_api_token()
                 self._get_information_from_zabbix()
-            except Zabbix_Auth_Error: print('Wrong user or password. Try again...')
-            except Exception:         sys.exit()
-            else:  data_received = True
+            except Exception as e:
+                print(f'[ERROR]: {e}')
+                sys.exit()
+            else:
+                data_received = True
 
 
 
     def _get_api_token(self) -> None:
         auth_payload:dict = self._get_token_request_payload()
-        response          = requests.post(Secret_Data.ZABBIX_URL, json=auth_payload)
+        
+        response = requests.post(Secret_Data.ZABBIX_URL, json=auth_payload)
         response.raise_for_status()
         response = response.json()
 
         if 'error' in response:
-            raise Zabbix_Auth_Error
+            raise Exception(response['error']['data'])
 
         self._token = response["result"]
 
@@ -82,7 +85,9 @@ class API_ZABBIX():
 
 
     def _get_information_from_zabbix(self) -> None:
+        print('>> Retrieving data from Zabbix API')
         hosts_payload:dict = self._get_hosts_information_resquest_payload()
+        
         response = requests.post(Secret_Data.ZABBIX_URL, json=hosts_payload)
         response.raise_for_status()
         response = response.json()
@@ -103,10 +108,3 @@ class API_ZABBIX():
             "auth": self._token,
             "id": 2
         }
-
-
-
-
-
-class Zabbix_Auth_Error:
-    pass

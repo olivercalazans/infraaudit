@@ -67,7 +67,7 @@ class Data:
     @staticmethod
     def _display_removed_devices(removed_hosts:int, all_hosts:int) -> None:
         result:int = all_hosts - removed_hosts
-        print(f'\t- Removed hosts: {removed_hosts} ({all_hosts} -> {result})')
+        print(f'>> Active hosts: {result}/{all_hosts}')
 
 
 

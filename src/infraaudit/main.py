@@ -26,7 +26,6 @@ class Main:
 
     @classmethod
     def _retrieve_host_information_from_zabbix_api(cls) -> None:
-        print('>> Retrieving data from Zabbix API')
         with API_ZABBIX(cls._data):
             ...
 
@@ -34,7 +33,6 @@ class Main:
 
     @classmethod
     def _run_snmp_probes(cls) -> None:
-        print('>> Running SNMP probes')
         with SNMP_Manager(cls._data):
             ...
 
@@ -43,6 +41,12 @@ class Main:
     @classmethod
     def _display_result(cls) -> None:
         cls._display_ap_ruckus_result()
+
+    
+
+    @staticmethod
+    def _display_title(message:str) -> None:
+        print(f'\n# {message} ', (80 - len(message)) * '=')
     
 
 
@@ -51,7 +55,7 @@ class Main:
         ip_prefix:str = Secret_Data.IP_PREFIX['AP Ruckus']
         if not ip_prefix in cls._data.information: return
         
-        print('\n# AP RUCKUS RESULTS')
+        cls._display_title('APs Ruckus')
         for device, firmware in cls._data.information[ip_prefix]:
             print(f'Device model: {device:>7} - Firmware Version: {firmware}')
 
@@ -59,7 +63,7 @@ class Main:
 
     @classmethod
     def _display_devices_with_no_response(cls) -> None:
-        print('\n# DEVICES WITH NO RESPONSES', '=' * 60)
+        cls._display_title('DEVICES WITH NO RESPONSES')
         for ip, info in cls._data.removed_hosts.items():
             print(f'{info["name"]:<12} {ip:<15} -> Error: {info["error"]}')
 

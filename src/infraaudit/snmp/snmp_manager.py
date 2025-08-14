@@ -65,13 +65,13 @@ class SNMP_Manager:
 
 
     def _verify_which_devices_are_active(self) -> None:
-        print('  # Verifying which devices are active')
+        print('>> Verifying which devices are active')
         self._run_tasks([oids.SYS_OBJECT_ID])
     
 
 
     def _get_ruckus_information(self) -> None:
-        print('  # Collecting data from Ruckus APs')
+        print('>> Collecting data from Ruckus APs')
         self._run_tasks([oids.SYS_DESCRIPTION, oids.RUCKUS_AP_MODEL, oids.RUCKUS_FIRMWARE_VERSION])
 
     
