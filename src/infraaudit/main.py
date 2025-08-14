@@ -42,7 +42,18 @@ class Main:
     def _display_result(cls) -> None:
         cls._display_ap_ruckus_result()
 
+
     
+    @classmethod
+    def _no_data(cls, device_type:str):
+        cls._display_title(device_type)
+        ip_prefix:str = Secret_Data.get_ip_prefix(device_type)
+        
+        if not ip_prefix in cls._data.information:
+            print(f'No response from {device_type} devices')
+            return True
+        
+
 
     @staticmethod
     def _display_title(message:str) -> None:
@@ -52,10 +63,10 @@ class Main:
 
     @classmethod
     def _display_ap_ruckus_result(cls) -> None:
-        ip_prefix:str = Secret_Data.IP_PREFIX['AP Ruckus']
-        if not ip_prefix in cls._data.information: return
+        DEVICE_TYPE:str = 'Ruckus AP'
+        if cls._no_data(DEVICE_TYPE): return
         
-        cls._display_title('APs Ruckus')
+        ip_prefix:str = Secret_Data.get_ip_prefix(DEVICE_TYPE)
         for device, firmware in cls._data.information[ip_prefix]:
             print(f'Device model: {device:>7} - Firmware Version: {firmware}')
 

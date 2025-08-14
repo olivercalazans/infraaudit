@@ -23,7 +23,7 @@ class Data:
     responses:list     = field(default_factory=list)
     hosts:dict         = field(default_factory=dict)
     removed_hosts:dict = field(default_factory=dict)
-    information:set    = field(default_factory=lambda: {i:set() for i in Secret_Data.get_ip_prefixes()})
+    information:set    = field(default_factory=lambda: {i:set() for i in Secret_Data.get_all_ip_prefixes()})
 
 
 
@@ -32,7 +32,7 @@ class Data:
         for device in self.responses:
             ip:str = device['interfaces'][0]['ip']
             
-            if self._get_ip_prefix(ip) in Secret_Data.get_ip_prefixes():
+            if self._get_ip_prefix(ip) in Secret_Data.get_all_ip_prefixes():
                 self.hosts[ip] = {'name': device['name']}
 
         self.responses.clear()
