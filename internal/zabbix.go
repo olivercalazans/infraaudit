@@ -17,7 +17,26 @@ type Config struct {
 	APIURL string `json:"api_url"`
 }
 
-func GetDataFromZabbix() ([]byte, error) {
+type HostInfo struct {
+	HostID     string `json:"hostid"`
+	Name       string `json:"name"`
+	Interfaces []struct {
+		IP string `json:"ip"`
+	} `json:"interfaces"`
+}
+
+type ZabbixResponse struct {
+	Jsonrpc string          `json:"jsonrpc"`
+	Result  json.RawMessage `json:"result"`
+	Error   *struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+		Data    string `json:"data"`
+	} `json:"error,omitempty"`
+	ID int `json:"id"`
+}
+
+func GetDataFromZabbix() ([]HostInfo, error) {
 	cfg, err := loadConfig("config.json")
 	if err != nil {
 		return nil, err
@@ -38,12 +57,12 @@ func GetDataFromZabbix() ([]byte, error) {
 		return nil, err
 	}
 
-	rawJSON, err := getHosts(cfg.APIURL, token)
+	hosts, err := getHosts(cfg.APIURL, token)
 	if err != nil {
 		return nil, err
 	}
 
-	return rawJSON, nil
+	return hosts, nil
 }
 
 func loadConfig(path string) (*Config, error) {
@@ -83,12 +102,13 @@ func login(apiURL, user, pass string) (string, error) {
 	return token, nil
 }
 
-func getHosts(apiURL, auth string) ([]byte, error) {
+func getHosts(apiURL, auth string) ([]HostInfo, error) {
 	req := map[string]interface{}{
 		"jsonrpc": "2.0",
 		"method":  "host.get",
 		"params": map[string]interface{}{
-			"output": "extend",
+			"output":           []string{"hostid", "name"},
+			"selectInterfaces": []string{"ip"},
 		},
 		"auth": auth,
 		"id":   2,
@@ -99,7 +119,11 @@ func getHosts(apiURL, auth string) ([]byte, error) {
 		return nil, err
 	}
 
-	return resp.Result, nil
+	var hosts []HostInfo
+	if err := json.Unmarshal(resp.Result, &hosts); err != nil {
+		return nil, err
+	}
+	return hosts, nil
 }
 
 func sendRequest(apiURL string, req map[string]interface{}) (*ZabbixResponse, error) {
@@ -120,15 +144,4 @@ func sendRequest(apiURL string, req map[string]interface{}) (*ZabbixResponse, er
 			zResp.Error.Code, zResp.Error.Message, zResp.Error.Data)
 	}
 	return &zResp, nil
-}
-
-type ZabbixResponse struct {
-	Jsonrpc string          `json:"jsonrpc"`
-	Result  json.RawMessage `json:"result"`
-	Error   *struct {
-		Code    int    `json:"code"`
-		Message string `json:"message"`
-		Data    string `json:"data"`
-	} `json:"error,omitempty"`
-	ID int `json:"id"`
 }
