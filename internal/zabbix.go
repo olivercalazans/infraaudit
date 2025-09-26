@@ -13,9 +13,7 @@ import (
 	"golang.org/x/term"
 )
 
-type Config struct {
-	APIURL string `json:"api_url"`
-}
+
 
 type HostInfo struct {
 	HostID     string `json:"hostid"`
@@ -24,6 +22,8 @@ type HostInfo struct {
 		IP string `json:"ip"`
 	} `json:"interfaces"`
 }
+
+
 
 type ZabbixResponse struct {
 	Jsonrpc string          `json:"jsonrpc"`
@@ -36,50 +36,44 @@ type ZabbixResponse struct {
 	ID int `json:"id"`
 }
 
-func GetDataFromZabbix() ([]HostInfo, error) {
-	cfg, err := loadConfig("config.json")
+
+
+func GetDataFromZabbix(apiUrl string) []HostInfo {
+	user  := getUser()
+	pass  := getPassword()
+	token := getZabbixToken(apiUrl, user, pass)
+
+	hosts, err := getHosts(apiUrl, token)
 	if err != nil {
 		return nil, err
 	}
 
+	return hosts
+}
+
+
+
+func getUser() string {
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Print("User: ")
 	userRaw, _ := reader.ReadString('\n')
 	user := strings.TrimSpace(userRaw)
+	return user
+}
 
+
+
+func getPassword() string {
 	fmt.Print("Password: ")
 	bytePass, _ := term.ReadPassword(int(syscall.Stdin))
 	fmt.Println()
 	pass := strings.TrimSpace(string(bytePass))
-
-	token, err := login(cfg.APIURL, user, pass)
-	if err != nil {
-		return nil, err
-	}
-
-	hosts, err := getHosts(cfg.APIURL, token)
-	if err != nil {
-		return nil, err
-	}
-
-	return hosts, nil
+	return pass
 }
 
-func loadConfig(path string) (*Config, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
 
-	var cfg Config
-	if err := json.NewDecoder(file).Decode(&cfg); err != nil {
-		return nil, err
-	}
-	return &cfg, nil
-}
 
-func login(apiURL, user, pass string) (string, error) {
+func getZabbixToken(apiURL, user, pass string) string {
 	req := map[string]interface{}{
 		"jsonrpc": "2.0",
 		"method":  "user.login",
@@ -92,17 +86,20 @@ func login(apiURL, user, pass string) (string, error) {
 
 	resp, err := sendRequest(apiURL, req)
 	if err != nil {
-		return "", err
+		panic(fmt.Sprintf("Failed to get token from server: %v", err))
 	}
 
 	var token string
 	if err := json.Unmarshal(resp.Result, &token); err != nil {
-		return "", err
+		panic(fmt.Sprintf("No token received from server: %v", err))
 	}
-	return token, nil
+
+	return token
 }
 
-func getHosts(apiURL, auth string) ([]HostInfo, error) {
+
+
+func getHosts(apiURL, auth string) []HostInfo {
 	req := map[string]interface{}{
 		"jsonrpc": "2.0",
 		"method":  "host.get",
@@ -116,15 +113,17 @@ func getHosts(apiURL, auth string) ([]HostInfo, error) {
 
 	resp, err := sendRequest(apiURL, req)
 	if err != nil {
-		return nil, err
+		return nil
 	}
 
 	var hosts []HostInfo
 	if err := json.Unmarshal(resp.Result, &hosts); err != nil {
-		return nil, err
+		return nil
 	}
-	return hosts, nil
+	return hosts
 }
+
+
 
 func sendRequest(apiURL string, req map[string]interface{}) (*ZabbixResponse, error) {
 	data, _ := json.Marshal(req)
