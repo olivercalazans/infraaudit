@@ -42,12 +42,7 @@ func GetDataFromZabbix(apiUrl string) []HostInfo {
 	user  := getUser()
 	pass  := getPassword()
 	token := getZabbixToken(apiUrl, user, pass)
-
-	hosts, err := getHosts(apiUrl, token)
-	if err != nil {
-		return nil, err
-	}
-
+	hosts := getHosts(apiUrl, token)
 	return hosts
 }
 
@@ -99,7 +94,7 @@ func getZabbixToken(apiURL, user, pass string) string {
 
 
 
-func getHosts(apiURL, auth string) []HostInfo {
+func getHosts(apiURL, token string) []HostInfo {
 	req := map[string]interface{}{
 		"jsonrpc": "2.0",
 		"method":  "host.get",
@@ -107,19 +102,20 @@ func getHosts(apiURL, auth string) []HostInfo {
 			"output":           []string{"hostid", "name"},
 			"selectInterfaces": []string{"ip"},
 		},
-		"auth": auth,
+		"auth": token,
 		"id":   2,
 	}
 
 	resp, err := sendRequest(apiURL, req)
 	if err != nil {
-		return nil
+		panic(fmt.Sprintf("Impossible to communicate with Zabbix server: %v", err))
 	}
 
 	var hosts []HostInfo
 	if err := json.Unmarshal(resp.Result, &hosts); err != nil {
-		return nil
+		panic(fmt.Sprintf("Failed to parse hosts response from Zabbix: %v", err))
 	}
+
 	return hosts
 }
 
