@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -81,12 +82,12 @@ func getZabbixToken(apiURL, user, pass string) string {
 
 	resp, err := sendRequest(apiURL, req)
 	if err != nil {
-		panic(fmt.Sprintf("Failed to get token from server: %v", err))
+		log.Fatal("Failed to get token from server:", err)
 	}
 
 	var token string
 	if err := json.Unmarshal(resp.Result, &token); err != nil {
-		panic(fmt.Sprintf("No token received from server: %v", err))
+		log.Fatal("No token received from server:", err)
 	}
 
 	return token
@@ -108,12 +109,12 @@ func getHosts(apiURL, token string) []HostInfo {
 
 	resp, err := sendRequest(apiURL, req)
 	if err != nil {
-		panic(fmt.Sprintf("Impossible to communicate with Zabbix server: %v", err))
+		log.Fatal("Impossible to communicate with Zabbix server:", err)
 	}
 
 	var hosts []HostInfo
 	if err := json.Unmarshal(resp.Result, &hosts); err != nil {
-		panic(fmt.Sprintf("Failed to parse hosts response from Zabbix: %v", err))
+		log.Fatal("Failed to parse hosts response from Zabbix:", err)
 	}
 
 	return hosts
@@ -138,5 +139,6 @@ func sendRequest(apiURL string, req map[string]interface{}) (*ZabbixResponse, er
 		return nil, fmt.Errorf("API error %d: %s - %s",
 			zResp.Error.Code, zResp.Error.Message, zResp.Error.Data)
 	}
+	
 	return &zResp, nil
 }
