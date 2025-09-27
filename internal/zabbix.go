@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -13,9 +14,7 @@ import (
 	"golang.org/x/term"
 )
 
-type Config struct {
-	APIURL string `json:"api_url"`
-}
+
 
 type HostInfo struct {
 	HostID     string `json:"hostid"`
@@ -24,6 +23,8 @@ type HostInfo struct {
 		IP string `json:"ip"`
 	} `json:"interfaces"`
 }
+
+
 
 type ZabbixResponse struct {
 	Jsonrpc string          `json:"jsonrpc"`
@@ -36,50 +37,39 @@ type ZabbixResponse struct {
 	ID int `json:"id"`
 }
 
-func GetDataFromZabbix() ([]HostInfo, error) {
-	cfg, err := loadConfig("config.json")
-	if err != nil {
-		return nil, err
-	}
 
+
+func GetDataFromZabbix(apiUrl string) []HostInfo {
+	user  := getUser()
+	pass  := getPassword()
+	token := getZabbixToken(apiUrl, user, pass)
+	hosts := getHosts(apiUrl, token)
+	return hosts
+}
+
+
+
+func getUser() string {
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Print("User: ")
 	userRaw, _ := reader.ReadString('\n')
 	user := strings.TrimSpace(userRaw)
+	return user
+}
 
+
+
+func getPassword() string {
 	fmt.Print("Password: ")
 	bytePass, _ := term.ReadPassword(int(syscall.Stdin))
 	fmt.Println()
 	pass := strings.TrimSpace(string(bytePass))
-
-	token, err := login(cfg.APIURL, user, pass)
-	if err != nil {
-		return nil, err
-	}
-
-	hosts, err := getHosts(cfg.APIURL, token)
-	if err != nil {
-		return nil, err
-	}
-
-	return hosts, nil
+	return pass
 }
 
-func loadConfig(path string) (*Config, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
 
-	var cfg Config
-	if err := json.NewDecoder(file).Decode(&cfg); err != nil {
-		return nil, err
-	}
-	return &cfg, nil
-}
 
-func login(apiURL, user, pass string) (string, error) {
+func getZabbixToken(apiURL, user, pass string) string {
 	req := map[string]interface{}{
 		"jsonrpc": "2.0",
 		"method":  "user.login",
@@ -92,17 +82,20 @@ func login(apiURL, user, pass string) (string, error) {
 
 	resp, err := sendRequest(apiURL, req)
 	if err != nil {
-		return "", err
+		log.Fatal("Failed to get token from server:", err)
 	}
 
 	var token string
 	if err := json.Unmarshal(resp.Result, &token); err != nil {
-		return "", err
+		log.Fatal("No token received from server:", err)
 	}
-	return token, nil
+
+	return token
 }
 
-func getHosts(apiURL, auth string) ([]HostInfo, error) {
+
+
+func getHosts(apiURL, token string) []HostInfo {
 	req := map[string]interface{}{
 		"jsonrpc": "2.0",
 		"method":  "host.get",
@@ -110,21 +103,24 @@ func getHosts(apiURL, auth string) ([]HostInfo, error) {
 			"output":           []string{"hostid", "name"},
 			"selectInterfaces": []string{"ip"},
 		},
-		"auth": auth,
+		"auth": token,
 		"id":   2,
 	}
 
 	resp, err := sendRequest(apiURL, req)
 	if err != nil {
-		return nil, err
+		log.Fatal("Impossible to communicate with Zabbix server:", err)
 	}
 
 	var hosts []HostInfo
 	if err := json.Unmarshal(resp.Result, &hosts); err != nil {
-		return nil, err
+		log.Fatal("Failed to parse hosts response from Zabbix:", err)
 	}
-	return hosts, nil
+
+	return hosts
 }
+
+
 
 func sendRequest(apiURL string, req map[string]interface{}) (*ZabbixResponse, error) {
 	data, _ := json.Marshal(req)
@@ -143,5 +139,6 @@ func sendRequest(apiURL string, req map[string]interface{}) (*ZabbixResponse, er
 		return nil, fmt.Errorf("API error %d: %s - %s",
 			zResp.Error.Code, zResp.Error.Message, zResp.Error.Data)
 	}
+	
 	return &zResp, nil
 }
