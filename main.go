@@ -10,7 +10,7 @@ import (
 
 func main() {
 	secrets := internal.NewSecrets()
-	//device  := internal.Data{}
+	device  := internal.Data{}
 	hosts   := internal.GetDataFromZabbix(secrets.APIURL)
 
 	for _, item := range hosts {
