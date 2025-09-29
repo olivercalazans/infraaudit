@@ -10,10 +10,12 @@ import (
 
 func main() {
 	secrets := internal.NewSecrets()
-	//device  := internal.Data{}
+	data    := internal.NewData()
 	hosts   := internal.GetDataFromZabbix(secrets.APIURL)
 
-	for _, item := range hosts {
-		fmt.Println(item)
+	data.FilterDevices(secrets.Prefixes, hosts)
+
+	for ip, i := range data.Hosts {
+		fmt.Println(ip, i.Name)
 	}
 }
