@@ -9,7 +9,7 @@ import (
 
 
 
-func queryDevice(ip, community, oid string) string {
+func queryDevice(ip, community, oid string) (bool, string) {
 	snmp := &goSnmp.GoSNMP{
 		Target:    ip,
 		Port:      161,
@@ -20,25 +20,25 @@ func queryDevice(ip, community, oid string) string {
 	}
 
 	if err := snmp.Connect(); err != nil {
-		return fmt.Sprintf("ERROR connecting to %s: %v", ip, err)
+		return false, fmt.Sprintf("ERROR connecting to %s: %v", ip, err)
 	}
 	defer snmp.Conn.Close()
 
 	result, err := snmp.Get([]string{oid})
 	if err != nil {
-		return fmt.Sprintf("ERROR querying %s: %v", ip, err)
+		return false, fmt.Sprintf("ERROR querying %s: %v", ip, err)
 	}
 
 	if len(result.Variables) == 0 {
-		return fmt.Sprintf("ERROR %s: no response", ip)
+		return false, fmt.Sprintf("ERROR %s: no response", ip)
 	}
 
-	return fmt.Sprintf("%s = %s", result.Variables[0].Name, SnmpPDUToString(result.Variables[0]))
+	return true, fmt.Sprintf("%s = %s", result.Variables[0].Name, snmpPDUToString(result.Variables[0]))
 }
 
 
 
-func SnmpPDUToString(pdu goSnmp.SnmpPDU) string {
+func snmpPDUToString(pdu goSnmp.SnmpPDU) string {
 	switch pdu.Type {
 	case goSnmp.OctetString:
 		if b, ok := pdu.Value.([]byte); ok {

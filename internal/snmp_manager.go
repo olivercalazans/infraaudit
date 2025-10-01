@@ -11,23 +11,9 @@ const (
 
 
 
-type SnmpManager struct {
-	responses []string
-}
-
-
-
-func NewSnmpManager() *SnmpManager {
-    return &SnmpManager{
-        responses: []string{},
-    }
-}
-
-
-
-func (snmp SnmpManager) GetDataFromDevices(data *Data, community string) {
-	for ip, _ := range data.Hosts {
-		x := queryDevice(ip, community, general)
-		fmt.Println(ip, x)
+func GetDataFromDevices(data *Data, community string) {
+	for _, host := range data.Hosts {
+		_, x := queryDevice(host.Ip, community, general)
+		fmt.Println(host.Ip, x)
 	}
 }
