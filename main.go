@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/olivercalazans/infraaudit/internal"
 )
 
@@ -14,6 +12,10 @@ func main() {
 
 	hosts := internal.GetDataFromZabbix(secrets.APIURL)
 	data.FilterDevices(secrets.Prefixes, hosts)
-	fmt.Println(data.Hosts)
-	//GetDataFromDevices(data, secrets.Community)
+	
+	snmp := internal.NewSnmpManager(data, secrets.Community)
+	snmp.SendSnmpProbes()
+
+	data.DisplayOfflineHosts()
+
 }

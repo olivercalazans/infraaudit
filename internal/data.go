@@ -1,18 +1,18 @@
 package internal
 
 import (
+	"fmt"
 	"strings"
 )
 
 type Data struct {
     Secrets      Secrets
-    Hosts        []Host
+    Hosts        map[string]Host
     OfflineHosts []OfflineHost
 }
 
 
 type Host struct {
-	Ip       string
 	Vendor   string
 	Name     string
 	Model    string
@@ -21,8 +21,9 @@ type Host struct {
 
 
 type OfflineHost struct {
-	Ip  string
-	Err string
+	Ip   string
+	Name string
+	Err  string
 }
 
 
@@ -30,7 +31,7 @@ type OfflineHost struct {
 func NewData() *Data {
     return &Data{
         Secrets:      Secrets{},
-        Hosts:        []Host{},
+        Hosts:        make(map[string]Host),
         OfflineHosts: []OfflineHost{},
     }
 }
@@ -53,9 +54,28 @@ func (d *Data) FilterDevices(prefixes map[string]string, devices []HostInfo) {
 
 
 func (d *Data) addHost(ip, vendor, name string) {
-	d.Hosts = append(d.Hosts, Host{
-		Ip:     ip,
+	d.Hosts[ip] = Host{
 		Vendor: vendor,
 		Name:   name,
-	})
+	}
+}
+
+
+
+func (d *Data) AddOfflineHost(ip, err string) {
+	d.OfflineHosts = append(d.OfflineHosts,
+		OfflineHost{
+			Ip:   ip,
+			Name: d.Hosts[ip].Name,
+			Err:  err,
+		},
+	)
+	delete(d.Hosts, ip)
+}
+
+
+func (d *Data) DisplayOfflineHosts() {
+	for _, offHost := range d.OfflineHosts {
+		fmt.Printf("%-12s - %-15s - %s\n", offHost.Name, offHost.Ip, offHost.Err)
+	}
 }
