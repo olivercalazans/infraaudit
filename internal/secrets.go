@@ -10,7 +10,7 @@ import (
 type Secrets struct {
 	APIURL    string   `json:"api_url"`
 	Prefixes  []string `json:"ips"`
-	Community string   `json:community`
+	Community string   `json:"community"`
 }
 
 

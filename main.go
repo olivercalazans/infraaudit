@@ -14,8 +14,5 @@ func main() {
 	data.FilterDevices(secrets.Prefixes, hosts)
 
 	snmp := internal.NewSnmpManager()
-
-	for ip, _ := range data.Hosts {
-		snmp.GetDataFromDevices(secrets.Community, ip)
-	}
+	snmp.GetDataFromDevices(data, secrets.Community)
 }
