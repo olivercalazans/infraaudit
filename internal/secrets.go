@@ -8,8 +8,9 @@ import (
 
 
 type Secrets struct {
-	APIURL   string   `json:"api_url"`
-	Prefixes []string `json:"ips"`
+	APIURL    string   			`json:"api_url"`
+	Prefixes  map[string]string `json:"prefixes"`
+	Community string   			`json:"community"`
 }
 
 
