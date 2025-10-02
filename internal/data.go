@@ -7,8 +7,8 @@ import (
 
 type Data struct {
     Secrets      Secrets
-    Hosts        map[string]Host
-    OfflineHosts []OfflineHost
+    Hosts        map[string]*Host
+    OfflineHosts []*OfflineHost
 }
 
 
@@ -31,14 +31,15 @@ type OfflineHost struct {
 func NewData() *Data {
     return &Data{
         Secrets:      Secrets{},
-        Hosts:        make(map[string]Host),
-        OfflineHosts: []OfflineHost{},
+        Hosts:        make(map[string]*Host),
+        OfflineHosts: []*OfflineHost{},
     }
 }
 
 
 
 func (d *Data) FilterDevices(prefixes map[string]string, devices []HostInfo) {
+	fmt.Println("> Filtering devices")
 	for _, host := range devices {
 		ip := host.Interfaces[0].IP
 
@@ -54,7 +55,7 @@ func (d *Data) FilterDevices(prefixes map[string]string, devices []HostInfo) {
 
 
 func (d *Data) addHost(ip, vendor, name string) {
-	d.Hosts[ip] = Host{
+	d.Hosts[ip] = &Host{
 		Vendor: vendor,
 		Name:   name,
 	}
@@ -62,9 +63,15 @@ func (d *Data) addHost(ip, vendor, name string) {
 
 
 
+func (d *Data) AddModel(ip, model string) {
+	d.Hosts[ip].Model = model
+}
+
+
+
 func (d *Data) AddOfflineHost(ip, err string) {
 	d.OfflineHosts = append(d.OfflineHosts,
-		OfflineHost{
+		&OfflineHost{
 			Ip:   ip,
 			Name: d.Hosts[ip].Name,
 			Err:  err,
