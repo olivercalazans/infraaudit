@@ -40,10 +40,7 @@ func (snmp *SnmpManager) SendSnmpProbes() {
 
 	fmt.Println("> Collecting Ruckus data")
 	snmp.getRuckusModel()
-
-	for _, i := range snmp.data.Hosts {
-		fmt.Println(i)
-	}
+	snmp.getRuckusFirmware()
 }
 
 
@@ -67,5 +64,16 @@ func (snmp *SnmpManager) getRuckusModel() {
 
 		model := strings.SplitN(snmpResp, " = ", 2)
 		snmp.data.AddModel(ip, model[1])
+	}
+}
+
+
+
+func (snmp *SnmpManager) getRuckusFirmware() {
+	for ip, _ := range snmp.data.Hosts {
+		_, snmpResp := queryDevice(ip, snmp.community, snmp.oids.ruckusFirmware)
+
+		model := strings.SplitN(snmpResp, " = ", 2)
+		snmp.data.AddFirmwareVersion(ip, model[1])
 	}
 }

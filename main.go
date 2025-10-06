@@ -16,6 +16,7 @@ func main() {
 	snmp := internal.NewSnmpManager(data, secrets.Community)
 	snmp.SendSnmpProbes()
 
+	data.DisplayRuckus()
 	data.DisplayOfflineHosts()
 
 }
