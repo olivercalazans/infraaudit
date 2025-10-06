@@ -1,6 +1,9 @@
 package internal
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 
 type SnmpManager struct {
@@ -27,8 +30,7 @@ func NewSnmpManager(data *Data, community string) *SnmpManager{
 			ruckusModel:    ".1.3.6.1.4.1.25053.1.1.2.1.1.1.1.0",
 			ruckusFirmware: ".1.3.6.1.4.1.25053.1.1.3.1.1.1.1.1.3.1",
 		},
-	}
-
+	} 
 }
 
 
@@ -36,17 +38,42 @@ func NewSnmpManager(data *Data, community string) *SnmpManager{
 func (snmp *SnmpManager) SendSnmpProbes() {
 	snmp.pruneOfflineDevices()
 
-	for _, i := range snmp.data.Hosts {
-		fmt.Println(i)
-	}
+	fmt.Println("> Collecting Ruckus data")
+	snmp.getRuckusModel()
+	snmp.getRuckusFirmware()
 }
 
 
 
 func (snmp *SnmpManager) pruneOfflineDevices() {
+	fmt.Println("> Checking which devices are online")
 	for ip, _ := range snmp.data.Hosts {
-		online, err := queryDevice(ip, snmp.community, snmp.oids.general)
-		if online { continue }
+		ok, err := queryDevice(ip, snmp.community, snmp.oids.general)
+		
+		if ok {continue }
+		
 		snmp.data.AddOfflineHost(ip, err)
+	}
+}
+
+
+
+func (snmp *SnmpManager) getRuckusModel() {
+	for ip, _ := range snmp.data.Hosts {
+		_, snmpResp := queryDevice(ip, snmp.community, snmp.oids.ruckusModel)
+
+		model := strings.SplitN(snmpResp, " = ", 2)
+		snmp.data.AddModel(ip, model[1])
+	}
+}
+
+
+
+func (snmp *SnmpManager) getRuckusFirmware() {
+	for ip, _ := range snmp.data.Hosts {
+		_, snmpResp := queryDevice(ip, snmp.community, snmp.oids.ruckusFirmware)
+
+		model := strings.SplitN(snmpResp, " = ", 2)
+		snmp.data.AddFirmwareVersion(ip, model[1])
 	}
 }

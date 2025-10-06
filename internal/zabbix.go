@@ -96,6 +96,7 @@ func getZabbixToken(apiURL, user, pass string) string {
 
 
 func getHosts(apiURL, token string) []HostInfo {
+	fmt.Println("\n> Retrieving data from Zabbix")
 	req := map[string]interface{}{
 		"jsonrpc": "2.0",
 		"method":  "host.get",
