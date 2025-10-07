@@ -1,6 +1,6 @@
-<h1 align="center"> InfraAudit </h1>
+<h1 align="center"> RuckusGuard </h1>
 
-This project is designed to gather information from internal devices and check for known CVEs. Collecting device information makes research easier by providing details about the device model and its firmware/software version.
+This project is designed to gather information from Ruckus APs and check for known CVEs. Collecting theses device information makes research easier by providing details about the device model and its firmware version.
 
 <br>
 
