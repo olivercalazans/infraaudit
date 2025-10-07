@@ -9,15 +9,14 @@ import (
 type SnmpManager struct {
 	data      *Data
 	community string
-	oids      OIDs 
 }
 
 
-type OIDs struct {
-	general        string
-	ruckusModel    string
-	ruckusFirmware string
-}
+const(
+	general        = ".1.3.6.1.2.1.1.1.0"
+	ruckusModel    = ".1.3.6.1.4.1.25053.1.1.2.1.1.1.1.0"
+	ruckusFirmware = ".1.3.6.1.4.1.25053.1.1.3.1.1.1.1.1.3.1"
+)
 
 
 
@@ -25,55 +24,39 @@ func NewSnmpManager(data *Data, community string) *SnmpManager{
 	return &SnmpManager{
 		data:      data,
 		community: community,
-		oids:      OIDs{    
-			general: 		".1.3.6.1.2.1.1.1.0",
-			ruckusModel:    ".1.3.6.1.4.1.25053.1.1.2.1.1.1.1.0",
-			ruckusFirmware: ".1.3.6.1.4.1.25053.1.1.3.1.1.1.1.1.3.1",
-		},
 	} 
 }
 
 
 
-func (snmp *SnmpManager) SendSnmpProbes() {
-	snmp.pruneOfflineDevices()
-
-	fmt.Println("> Collecting Ruckus data")
-	snmp.getRuckusModel()
-	snmp.getRuckusFirmware()
-}
-
-
-
-func (snmp *SnmpManager) pruneOfflineDevices() {
+func (m *SnmpManager) PruneOfflineDevices() {
 	fmt.Println("> Checking which devices are online")
-	for ip, _ := range snmp.data.Hosts {
-		ok, err := queryDevice(ip, snmp.community, snmp.oids.general)
-		
-		if ok {continue }
-		
-		snmp.data.AddOfflineHost(ip, err)
+	for ip, _ := range m.data.Hosts {
+		ok, err := queryDevice(ip, m.community, general)
+		if ok { continue }
+		m.data.AddOfflineHost(ip, err)
 	}
 }
 
 
 
-func (snmp *SnmpManager) getRuckusModel() {
-	for ip, _ := range snmp.data.Hosts {
-		_, snmpResp := queryDevice(ip, snmp.community, snmp.oids.ruckusModel)
-
+func (m *SnmpManager) GetModel() {
+	fmt.Println("> Fetching model")
+	for ip, _ := range m.data.Hosts{
+		_, snmpResp := queryDevice(ip, m.community, ruckusModel)
 		model := strings.SplitN(snmpResp, " = ", 2)
-		snmp.data.AddModel(ip, model[1])
+		m.data.AddModel(ip, model[1])
 	}
 }
 
 
 
-func (snmp *SnmpManager) getRuckusFirmware() {
-	for ip, _ := range snmp.data.Hosts {
-		_, snmpResp := queryDevice(ip, snmp.community, snmp.oids.ruckusFirmware)
+func (m *SnmpManager) GetFirmware() {
+	fmt.Println("> Fetching Firmware version")
+	for ip, _ := range m.data.Hosts {
+		_, snmpResp := queryDevice(ip, m.community, ruckusFirmware)
 
 		model := strings.SplitN(snmpResp, " = ", 2)
-		snmp.data.AddFirmwareVersion(ip, model[1])
+		m.data.AddFirmwareVersion(ip, model[1])
 	}
 }

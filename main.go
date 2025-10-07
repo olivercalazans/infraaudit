@@ -11,12 +11,13 @@ func main() {
 	data    := internal.NewData()
 
 	hosts := internal.GetDataFromZabbix(secrets.APIURL)
-	data.FilterDevices(secrets.Prefixes, hosts)
+	data.FilterDevices(secrets.Prefix, hosts)
 	
 	snmp := internal.NewSnmpManager(data, secrets.Community)
-	snmp.SendSnmpProbes()
+	snmp.PruneOfflineDevices()
+	snmp.GetModel()
+	snmp.GetFirmware()
 
 	data.DisplayRuckus()
 	data.DisplayOfflineHosts()
-
 }

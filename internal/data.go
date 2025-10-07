@@ -6,14 +6,12 @@ import (
 )
 
 type Data struct {
-    Secrets      Secrets
     Hosts        map[string]*Host
     OfflineHosts []*OfflineHost
 }
 
 
 type Host struct {
-	Vendor   string
 	Name     string
 	Model    string
 	Firmware string
@@ -21,16 +19,16 @@ type Host struct {
 
 
 type OfflineHost struct {
-	Ip   string
-	Name string
-	Err  string
+	Name   string
+	Vendor string
+	Ip     string
+	Err    string
 }
 
 
 
 func NewData() *Data {
     return &Data{
-        Secrets:      Secrets{},
         Hosts:        make(map[string]*Host),
         OfflineHosts: []*OfflineHost{},
     }
@@ -38,27 +36,20 @@ func NewData() *Data {
 
 
 
-func (d *Data) FilterDevices(prefixes map[string]string, devices []HostInfo) {
+func (d *Data) FilterDevices(prefix string, devices []HostInfo) {
 	fmt.Println("> Filtering devices")
 	for _, host := range devices {
 		ip := host.Interfaces[0].IP
-
-		for vendor, prefix := range prefixes {
-			if strings.HasPrefix(ip, prefix) {
-				d.addHost(ip, vendor, host.Name)
-				break
-			}
+		if strings.HasPrefix(ip, prefix) {
+			d.addHost(ip, host.Name)
 		}
 	}
 }
 
 
 
-func (d *Data) addHost(ip, vendor, name string) {
-	d.Hosts[ip] = &Host{
-		Vendor: vendor,
-		Name:   name,
-	}
+func (d *Data) addHost(ip, name string) {
+	d.Hosts[ip] = &Host{ Name: name }
 }
 
 
@@ -78,48 +69,50 @@ func (d *Data) AddFirmwareVersion(ip, firmware string) {
 func (d *Data) AddOfflineHost(ip, err string) {
 	d.OfflineHosts = append(d.OfflineHosts,
 		&OfflineHost{
-			Ip:   ip,
-			Name: d.Hosts[ip].Name,
-			Err:  err,
+			Name:   d.Hosts[ip].Name,
+			Ip:     ip,
+			Err:    err,
 		},
 	)
+
 	delete(d.Hosts, ip)
 }
 
 
-func displayHeader(title, header string) {
-	fmt.Printf("\n### %s\n", title)
-	headerLen := len(header)
-	displayLine(headerLen)
-	fmt.Printf("%s", header)
-	displayLine(headerLen)
-}
 
+func displayHeader(headers []string, lens []int) {
+	var header strings.Builder
+	var line strings.Builder
 
+	for i := range headers {
+		header.WriteString(fmt.Sprintf("%-*s   ", lens[i], headers[i]))
+		line.WriteString(fmt.Sprintf("%s   ", strings.Repeat("-", lens[i])))
+	}
 
-func displayLine(len int) {
-	fmt.Printf("+%s+\n", strings.Repeat("-", len - 3))
+	fmt.Printf("\n\n%s\n", header.String())
+	fmt.Println(line.String())
 }
 
 
 
 func (d *Data) DisplayRuckus() {
-	header := fmt.Sprintf("| %-15s | %-15s | %-7s | %s |\n", "Name", "IP", "Model", "Firmware Version")
-	displayHeader("Ruckus devices", header)
+	headers := []string{"Name", "IP", "Model", "Firmware Version"}
+	lens    := []int{15, 15, 8, 18}  
+	displayHeader(headers, lens)
 
 	for ip, host := range d.Hosts {
-		if host.Vendor != "ruckus" { continue }
-		fmt.Printf("  %-15s | %-15s | %-7s | %s\n", host.Name, ip, host.Model, host.Firmware)
+		fmt.Printf("%-15s   %-15s   %-8s   %s\n", host.Name, ip, host.Model, host.Firmware)
 	}
 }
 
 
 
 func (d *Data) DisplayOfflineHosts() {
-	header := fmt.Sprintf("| %-15s | %-15s | %-7s |\n", "Name", "IP", "Error")
-	displayHeader("Offline devices", header)
+	headers := []string{"Name", "IP", "Error"}
+	lens    := []int{15, 15, 7}
+	displayHeader(headers, lens)
 
 	for _, offHost := range d.OfflineHosts {
-		fmt.Printf("  %-15s | %-15s | %s\n", offHost.Name, offHost.Ip, offHost.Err)
+		fmt.Printf("%-15s   %-15s   %s\n", offHost.Name, offHost.Ip, offHost.Err)
 	}
 }
