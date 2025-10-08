@@ -26,7 +26,7 @@ func NewSnmpManager(data *Data, community string) *SnmpManager{
 
 func (m *SnmpManager) PruneOfflineDevices() {
 	fmt.Println("> Checking which devices are online")
-	for ip, _ := range m.data.Hosts {
+	for ip := range m.data.Hosts {
 		ok, err := queryDevice(ip, m.community, m.oids.General)
 		if ok { continue }
 		m.data.AddOfflineHost(ip, err)
@@ -35,47 +35,39 @@ func (m *SnmpManager) PruneOfflineDevices() {
 
 
 
+func (m *SnmpManager) fetchAllHosts(addMethod func(string, string), oid string) {
+	for ip := range m.data.Hosts{
+		_, snmpResp := queryDevice(ip, m.community, oid)
+		
+		parts := strings.SplitN(snmpResp, " = ", 2)
+		addMethod(ip, parts[1])
+	}
+}
+
+
+
 func (m *SnmpManager) GetModel() {
 	fmt.Println("> Fetching model")
-	for ip, _ := range m.data.Hosts{
-		_, snmpResp := queryDevice(ip, m.community, m.oids.Model)
-		parts := strings.SplitN(snmpResp, " = ", 2)
-		m.data.AddModel(ip, parts[1])
-	}
+	m.fetchAllHosts(m.data.AddModel, m.oids.Model)
 }
 
 
 
 func (m *SnmpManager) GetFirmware() {
 	fmt.Println("> Fetching Firmware version")
-	for ip, _ := range m.data.Hosts {
-		_, snmpResp := queryDevice(ip, m.community, m.oids.Firmware)
-
-		parts := strings.SplitN(snmpResp, " = ", 2)
-		m.data.AddFirmwareVersion(ip, parts[1])
-	}
+	m.fetchAllHosts(m.data.AddFirmwareVersion, m.oids.Firmware)
 }
 
 
 
 func (m *SnmpManager) GetCpuUsage() {
 	fmt.Println("> Fetching CPU usage")
-	for ip, _ := range m.data.Hosts {
-		_, snmpResp := queryDevice(ip, m.community, m.oids.CPU)
-
-		parts := strings.SplitN(snmpResp, " = ", 2)
-		m.data.AddCPU(ip, parts[1])
-	}
+	m.fetchAllHosts(m.data.AddCPU, m.oids.CPU)
 }
 
 
 
 func (m *SnmpManager) GetMemoryUsage() {
 	fmt.Println("> Fetching Memory usage")
-	for ip, _ := range m.data.Hosts {
-		_, snmpResp := queryDevice(ip, m.community, m.oids.Memory)
-
-		parts := strings.SplitN(snmpResp, " = ", 2)
-		m.data.AddMemory(ip, parts[1])
-	}
+	m.fetchAllHosts(m.data.AddMemory, m.oids.Memory)
 }
