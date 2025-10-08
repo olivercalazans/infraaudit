@@ -39,8 +39,8 @@ func (m *SnmpManager) GetModel() {
 	fmt.Println("> Fetching model")
 	for ip, _ := range m.data.Hosts{
 		_, snmpResp := queryDevice(ip, m.community, m.oids.Model)
-		model := strings.SplitN(snmpResp, " = ", 2)
-		m.data.AddModel(ip, model[1])
+		parts := strings.SplitN(snmpResp, " = ", 2)
+		m.data.AddModel(ip, parts[1])
 	}
 }
 
@@ -51,7 +51,19 @@ func (m *SnmpManager) GetFirmware() {
 	for ip, _ := range m.data.Hosts {
 		_, snmpResp := queryDevice(ip, m.community, m.oids.Firmware)
 
-		model := strings.SplitN(snmpResp, " = ", 2)
-		m.data.AddFirmwareVersion(ip, model[1])
+		parts := strings.SplitN(snmpResp, " = ", 2)
+		m.data.AddFirmwareVersion(ip, parts[1])
+	}
+}
+
+
+
+func (m *SnmpManager) GetCPU() {
+	fmt.Println("> Fetching CPU usage")
+	for ip, _ := range m.data.Hosts {
+		_, snmpResp := queryDevice(ip, m.community, m.oids.CPU)
+
+		parts := strings.SplitN(snmpResp, " = ", 2)
+		m.data.AddCPU(ip, fmt.Sprintf("%s%%", parts[1]))
 	}
 }

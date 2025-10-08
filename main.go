@@ -17,6 +17,7 @@ func main() {
 	snmp.PruneOfflineDevices()
 	snmp.GetModel()
 	snmp.GetFirmware()
+	snmp.GetCPU()
 
 	data.DisplayRuckus()
 	data.DisplayOfflineHosts()

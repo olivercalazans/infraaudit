@@ -15,6 +15,7 @@ type Host struct {
 	Name     string
 	Model    string
 	Firmware string
+	CPU      string
 }
 
 
@@ -48,6 +49,20 @@ func (d *Data) FilterDevices(prefix string, devices []HostInfo) {
 
 
 
+func (d *Data) AddOfflineHost(ip, err string) {
+	d.OfflineHosts = append(d.OfflineHosts,
+		&OfflineHost{
+			Name:   d.Hosts[ip].Name,
+			Ip:     ip,
+			Err:    err,
+		},
+	)
+
+	delete(d.Hosts, ip)
+}
+
+
+
 func (d *Data) addHost(ip, name string) {
 	d.Hosts[ip] = &Host{ Name: name }
 }
@@ -66,16 +81,8 @@ func (d *Data) AddFirmwareVersion(ip, firmware string) {
 
 
 
-func (d *Data) AddOfflineHost(ip, err string) {
-	d.OfflineHosts = append(d.OfflineHosts,
-		&OfflineHost{
-			Name:   d.Hosts[ip].Name,
-			Ip:     ip,
-			Err:    err,
-		},
-	)
-
-	delete(d.Hosts, ip)
+func (d *Data) AddCPU(ip, cpu string) {
+	d.Hosts[ip].CPU = cpu
 }
 
 
@@ -96,12 +103,12 @@ func displayHeader(headers []string, lens []int) {
 
 
 func (d *Data) DisplayRuckus() {
-	headers := []string{"Name", "IP", "Model", "Firmware Version"}
-	lens    := []int{15, 15, 8, 18}  
+	headers := []string{"Name", "IP", "Model", "%CPU", "Firmware Version"}
+	lens    := []int{15, 15, 8, 4, 18}  
 	displayHeader(headers, lens)
 
-	for ip, host := range d.Hosts {
-		fmt.Printf("%-15s   %-15s   %-8s   %s\n", host.Name, ip, host.Model, host.Firmware)
+	for ip, h := range d.Hosts {
+		fmt.Printf("%-15s   %-15s   %-8s   %-4s   %s\n", h.Name, ip, h.Model, h.CPU, h.Firmware)
 	}
 }
 
