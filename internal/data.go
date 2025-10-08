@@ -16,6 +16,7 @@ type Host struct {
 	Model    string
 	Firmware string
 	CPU      string
+	Memory   string
 }
 
 
@@ -82,7 +83,13 @@ func (d *Data) AddFirmwareVersion(ip, firmware string) {
 
 
 func (d *Data) AddCPU(ip, cpu string) {
-	d.Hosts[ip].CPU = cpu
+	d.Hosts[ip].CPU = fmt.Sprintf("%s%%", cpu)
+}
+
+
+
+func (d *Data) AddMemory(ip, memory string) {
+	d.Hosts[ip].Memory = fmt.Sprintf("%s%%", memory)
 }
 
 
@@ -103,12 +110,12 @@ func displayHeader(headers []string, lens []int) {
 
 
 func (d *Data) DisplayRuckus() {
-	headers := []string{"Name", "IP", "Model", "%CPU", "Firmware Version"}
-	lens    := []int{15, 15, 8, 4, 18}  
+	headers := []string{"Name", "IP", "Model", "%CPU", "%Memory", "Firmware Version"}
+	lens    := []int{15, 15, 8, 4, 7, 18}  
 	displayHeader(headers, lens)
 
 	for ip, h := range d.Hosts {
-		fmt.Printf("%-15s   %-15s   %-8s   %-4s   %s\n", h.Name, ip, h.Model, h.CPU, h.Firmware)
+		fmt.Printf("%-15s   %-15s   %-8s   %-4s   %-7s   %s\n", h.Name, ip, h.Model, h.CPU, h.Memory, h.Firmware)
 	}
 }
 

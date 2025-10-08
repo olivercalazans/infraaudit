@@ -58,12 +58,24 @@ func (m *SnmpManager) GetFirmware() {
 
 
 
-func (m *SnmpManager) GetCPU() {
+func (m *SnmpManager) GetCpuUsage() {
 	fmt.Println("> Fetching CPU usage")
 	for ip, _ := range m.data.Hosts {
 		_, snmpResp := queryDevice(ip, m.community, m.oids.CPU)
 
 		parts := strings.SplitN(snmpResp, " = ", 2)
-		m.data.AddCPU(ip, fmt.Sprintf("%s%%", parts[1]))
+		m.data.AddCPU(ip, parts[1])
+	}
+}
+
+
+
+func (m *SnmpManager) GetMemoryUsage() {
+	fmt.Println("> Fetching Memory usage")
+	for ip, _ := range m.data.Hosts {
+		_, snmpResp := queryDevice(ip, m.community, m.oids.Memory)
+
+		parts := strings.SplitN(snmpResp, " = ", 2)
+		m.data.AddMemory(ip, parts[1])
 	}
 }
