@@ -3,6 +3,7 @@ package internal
 import (
 	"fmt"
 	"strings"
+	"sync"
 )
 
 
@@ -25,24 +26,57 @@ func NewSnmpManager(data *Data, community string) *SnmpManager{
 
 
 func (m *SnmpManager) PruneOfflineDevices() {
-	fmt.Println("> Checking which devices are online")
-	for ip := range m.data.Hosts {
-		ok, err := queryDevice(ip, m.community, m.oids.General)
-		if ok { continue }
-		m.data.AddOfflineHost(ip, err)
-	}
+    fmt.Println("> Checking which devices are online")
+
+    sem := make(chan struct{}, 50)
+    var wg sync.WaitGroup
+
+    for ip := range m.data.Hosts {
+        wg.Add(1)
+        sem <- struct{}{}
+
+        go func(ip string) {
+            defer wg.Done()
+            defer func() { <-sem }()
+
+            ok, err := queryDevice(ip, m.community, m.oids.General)
+            if !ok {
+                m.data.AddOfflineHost(ip, err)
+            }
+        }(ip)
+    }
+
+    wg.Wait()
 }
+
 
 
 
 func (m *SnmpManager) fetchAllHosts(addMethod func(string, string), oid string) {
-	for ip := range m.data.Hosts{
-		_, snmpResp := queryDevice(ip, m.community, oid)
-		
-		parts := strings.SplitN(snmpResp, " = ", 2)
-		addMethod(ip, parts[1])
-	}
+    sem := make(chan struct{}, 50)
+    var wg sync.WaitGroup
+
+    for ip := range m.data.Hosts {
+        wg.Add(1)
+        sem <- struct{}{}
+
+        go func(ip string) {
+            defer wg.Done()
+            defer func() { <-sem }()
+
+            _, snmpResp := queryDevice(ip, m.community, oid)
+            parts := strings.SplitN(snmpResp, " = ", 2)
+            if len(parts) == 2 {
+                addMethod(ip, parts[1])
+            } else {
+                addMethod(ip, "<invalid response>")
+            }
+        }(ip)
+    }
+
+    wg.Wait()
 }
+
 
 
 

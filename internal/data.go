@@ -3,11 +3,13 @@ package internal
 import (
 	"fmt"
 	"strings"
+	"sync"
 )
 
 type Data struct {
     Hosts        map[string]*Host
     OfflineHosts []*OfflineHost
+	mu 			 sync.Mutex
 }
 
 
@@ -51,6 +53,9 @@ func (d *Data) FilterDevices(prefix string, devices []HostInfo) {
 
 
 func (d *Data) AddOfflineHost(ip, err string) {
+	d.mu.Lock()
+    defer d.mu.Unlock()
+
 	d.OfflineHosts = append(d.OfflineHosts,
 		&OfflineHost{
 			Name:   d.Hosts[ip].Name,
@@ -71,24 +76,32 @@ func (d *Data) addHost(ip, name string) {
 
 
 func (d *Data) AddModel(ip, model string) {
+	d.mu.Lock()
+    defer d.mu.Unlock()
 	d.Hosts[ip].Model = model
 }
 
 
 
 func (d *Data) AddFirmwareVersion(ip, firmware string) {
+	d.mu.Lock()
+    defer d.mu.Unlock()
 	d.Hosts[ip].Firmware = firmware
 }
 
 
 
 func (d *Data) AddCPU(ip, cpu string) {
+	d.mu.Lock()
+    defer d.mu.Unlock()
 	d.Hosts[ip].CPU = fmt.Sprintf("%s%%", cpu)
 }
 
 
 
 func (d *Data) AddMemory(ip, memory string) {
+	d.mu.Lock()
+    defer d.mu.Unlock()
 	d.Hosts[ip].Memory = fmt.Sprintf("%s%%", memory)
 }
 
