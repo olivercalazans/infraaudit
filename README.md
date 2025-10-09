@@ -1,6 +1,6 @@
 <h1 align="center"> RuckusGuard </h1>
 
-This project is designed to gather information from Ruckus APs and check for known CVEs. Collecting theses device information makes research easier by providing details about the device model and its firmware version.
+This project is a lightweight Go tool designed to automatically discover and gather key operational metrics from Ruckus access points within a local network.
 
 <br>
 
